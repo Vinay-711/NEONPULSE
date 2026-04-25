@@ -6,6 +6,16 @@ NeoPulse AI is a non-contact neonatal monitoring system that uses a smartphone c
 ## Core Value
 Provides affordable, hardware-free monitoring to enable early detection of neonatal risks at home, particularly for underserved rural populations.
 
+## Current Milestone: v2.0 Production & Mobile
+
+**Goal:** Evolve the web-based monitoring platform into a production-ready, edge-optimized mobile application with cloud sync and critical alerting integrations.
+
+**Target features:**
+- Cloud Database Sync
+- SMS/Email Emergency Alerts
+- Edge AI Optimization (ONNX/TFLite)
+- Native Mobile App Wrapper
+
 ## Current State (v1.1 Security & Portal)
 Shipped Firebase Auth middleware across all backend and frontend layers to ensure clinical data privacy. Deployed the React-based Doctor Dashboard for multi-patient time-series telemetry review, and smoothed out AR bounding box latency drift.
 
