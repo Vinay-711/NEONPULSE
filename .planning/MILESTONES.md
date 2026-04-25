@@ -21,3 +21,14 @@
 2. Implemented AR bounding box interpolation for perfect latency synchronization.
 3. Created FastAPI Firebase Token Verification Middleware.
 4. Bound Frontend SSE headers to Authentication layer.
+
+## v2.0 Production & Mobile (Shipped 2026-04-26)
+
+**Phases:** 4
+**Plans:** 4
+
+### Key Accomplishments
+1. Integrated real-time Firestore database syncing for telemetry backup.
+2. Built asynchronous Twilio/SendGrid SMS/Email alert dispatcher with 60s debouncing.
+3. Converted Scikit-Learn Random Forest to ONNX and deployed ONNX runtime inference.
+4. Wrapped NeoPulse frontend in a Capacitor container for native iOS/Android deployment.

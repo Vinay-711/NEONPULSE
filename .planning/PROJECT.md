@@ -6,18 +6,10 @@ NeoPulse AI is a non-contact neonatal monitoring system that uses a smartphone c
 ## Core Value
 Provides affordable, hardware-free monitoring to enable early detection of neonatal risks at home, particularly for underserved rural populations.
 
-## Current Milestone: v2.0 Production & Mobile
+## Current State (v2.0 Production & Mobile)
+Evolved NeoPulse into a production-ready edge platform. Telemetry runs natively on mobile devices via Capacitor wrapping the web dashboard. Inference is slashed via `onnxruntime`, Cloud Firestore backs up historical sessions, and an emergency pipeline automatically dispatches 60-second debounced Twilio SMS warnings.
 
-**Goal:** Evolve the web-based monitoring platform into a production-ready, edge-optimized mobile application with cloud sync and critical alerting integrations.
 
-**Target features:**
-- Cloud Database Sync
-- SMS/Email Emergency Alerts
-- Edge AI Optimization (ONNX/TFLite)
-- Native Mobile App Wrapper
-
-## Current State (v1.1 Security & Portal)
-Shipped Firebase Auth middleware across all backend and frontend layers to ensure clinical data privacy. Deployed the React-based Doctor Dashboard for multi-patient time-series telemetry review, and smoothed out AR bounding box latency drift.
 
 ## Target Audience
 - New parents (especially rural/underserved)
@@ -41,6 +33,10 @@ Shipped Firebase Auth middleware across all backend and frontend layers to ensur
 - ✓ Doctor Portal Dashboard for historical multi-patient visualization (v1.1)
 - ✓ Firebase Auth for clinical data protection (v1.1)
 - ✓ Synchronize UI AR overlay with backend latency for perfectly smooth bounding box tracking (v1.1)
+- ✓ Cloud Database Sync (v2.0)
+- ✓ SMS/Email Emergency Alerts (v2.0)
+- ✓ Edge AI Optimization (ONNX) (v2.0)
+- ✓ Native Mobile App Wrapper (v2.0)
 
 ### Active
 (None yet — planning next milestone)
@@ -57,6 +53,8 @@ Shipped Firebase Auth middleware across all backend and frontend layers to ensur
 | Eulerian Video Magnification | Industry standard for non-contact micro-motion | ✓ Good |
 | Server-Sent Events | Unidirectional telemetry is lightweight | ✓ Good |
 | Query Parameter Auth | EventSource doesn't support headers | ✓ Good |
+| ONNX Runtime | Slashes Scikit-Learn memory overhead | ✓ Good |
+| Capacitor Mobile Shell | Wraps existing DOM APIs seamlessly | ✓ Good |
 
 ---
 *Last updated: 2026-04-26 after v1.1 milestone*
