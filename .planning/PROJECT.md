@@ -6,6 +6,9 @@ NeoPulse AI is a non-contact neonatal monitoring system that uses a smartphone c
 ## Core Value
 Provides affordable, hardware-free monitoring to enable early detection of neonatal risks at home, particularly for underserved rural populations.
 
+## Current State (v1.0 MVP)
+Shipped the core foundation of NeoPulse. Transitioned the initial frontend prototype to a robust Python-based backend that handles Server-Sent Events, runs the EVM pipeline with SciPy, and utilizes a Scikit-Learn Random Forest model for Apnea detection.
+
 ## Target Audience
 - New parents (especially rural/underserved)
 - Healthcare workers (ASHA, nurses)
@@ -19,15 +22,16 @@ Provides affordable, hardware-free monitoring to enable early detection of neona
 ## Requirements
 
 ### Validated
-(None yet — ship to validate)
+- ✓ Capture real-time video input via smartphone camera (v1.0)
+- ✓ Extract breathing signal using computer vision (EVM) (v1.0)
+- ✓ Estimate heart rate (experimental) (v1.0)
+- ✓ AI-based anomaly detection for risk alerts (v1.0)
+- ✓ Provide simple dashboard for caregivers/doctors (v1.0)
 
 ### Active
-- [ ] Capture real-time video input via smartphone camera
-- [ ] Extract breathing signal using computer vision (EVM)
-- [ ] Estimate heart rate (experimental)
-- [ ] AI-based anomaly detection for risk alerts
-- [ ] Provide simple dashboard for caregivers/doctors
-- [ ] Offline operation using TensorFlow Lite (Edge AI)
+- [ ] Implement Doctor Portal Dashboard for historical multi-patient visualization.
+- [ ] Add Firebase Auth for clinical data protection.
+- [ ] Synchronize UI AR overlay with backend latency for perfectly smooth bounding box tracking.
 
 ### Out of Scope
 - Direct medical diagnosis (it is strictly an assistive tool for risk detection)
@@ -37,8 +41,9 @@ Provides affordable, hardware-free monitoring to enable early detection of neona
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Smartphone-only | Accessibility for rural populations | — Pending |
-| Eulerian Video Magnification | Industry standard for non-contact micro-motion | — Pending |
+| Smartphone-only | Accessibility for rural populations | ✓ Good |
+| Eulerian Video Magnification | Industry standard for non-contact micro-motion | ✓ Good |
+| Server-Sent Events | Unidirectional telemetry is lightweight | ✓ Good |
 
 ---
-*Last updated: 2026-04-26 after initialization*
+*Last updated: 2026-04-26 after v1.0 MVP milestone*
