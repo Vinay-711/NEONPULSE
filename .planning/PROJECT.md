@@ -6,14 +6,8 @@ NeoPulse AI is a non-contact neonatal monitoring system that uses a smartphone c
 ## Core Value
 Provides affordable, hardware-free monitoring to enable early detection of neonatal risks at home, particularly for underserved rural populations.
 
-## Current Milestone: v1.1 Security & Portal
-
-**Goal:** Secure the clinical data pipeline with Firebase authentication and build the historical dashboard for doctors.
-
-**Target features:**
-- Firebase Auth Middleware
-- Doctor Portal Dashboard
-- UI AR Overlay Sync
+## Current State (v1.1 Security & Portal)
+Shipped Firebase Auth middleware across all backend and frontend layers to ensure clinical data privacy. Deployed the React-based Doctor Dashboard for multi-patient time-series telemetry review, and smoothed out AR bounding box latency drift.
 
 ## Target Audience
 - New parents (especially rural/underserved)
@@ -24,6 +18,7 @@ Provides affordable, hardware-free monitoring to enable early detection of neona
 - Must work in low connectivity (offline support/edge AI).
 - Must operate effectively despite lighting variability and baby movement noise.
 - Needs high sensitivity detection with minimal false negative rate.
+- Must ensure strict access control via Authorization layers.
 
 ## Requirements
 
@@ -33,11 +28,12 @@ Provides affordable, hardware-free monitoring to enable early detection of neona
 - ✓ Estimate heart rate (experimental) (v1.0)
 - ✓ AI-based anomaly detection for risk alerts (v1.0)
 - ✓ Provide simple dashboard for caregivers/doctors (v1.0)
+- ✓ Doctor Portal Dashboard for historical multi-patient visualization (v1.1)
+- ✓ Firebase Auth for clinical data protection (v1.1)
+- ✓ Synchronize UI AR overlay with backend latency for perfectly smooth bounding box tracking (v1.1)
 
 ### Active
-- [ ] Implement Doctor Portal Dashboard for historical multi-patient visualization.
-- [ ] Add Firebase Auth for clinical data protection.
-- [ ] Synchronize UI AR overlay with backend latency for perfectly smooth bounding box tracking.
+(None yet — planning next milestone)
 
 ### Out of Scope
 - Direct medical diagnosis (it is strictly an assistive tool for risk detection)
@@ -50,6 +46,7 @@ Provides affordable, hardware-free monitoring to enable early detection of neona
 | Smartphone-only | Accessibility for rural populations | ✓ Good |
 | Eulerian Video Magnification | Industry standard for non-contact micro-motion | ✓ Good |
 | Server-Sent Events | Unidirectional telemetry is lightweight | ✓ Good |
+| Query Parameter Auth | EventSource doesn't support headers | ✓ Good |
 
 ---
-*Last updated: 2026-04-26 after v1.0 MVP milestone*
+*Last updated: 2026-04-26 after v1.1 milestone*

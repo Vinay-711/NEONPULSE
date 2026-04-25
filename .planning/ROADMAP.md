@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 01-04 (shipped 2026-04-26)
-- 🚧 **v1.1 Security & Portal** — Phases 05-06 (in progress)
+- ✅ **v1.1 Security & Portal** — Phases 05-06 (shipped 2026-04-26)
 
 ## Phases
 
@@ -17,19 +17,13 @@
 
 </details>
 
-### 🚧 v1.1 Security & Portal (In Progress / Planned)
+<details>
+<summary>✅ v1.1 Security & Portal (Phases 05-06) — SHIPPED 2026-04-26</summary>
 
-#### Phase 05: Doctor Portal & UI Polish
-**Goal**: Build the clinical visualization portal and synchronize UI AR bounding boxes.
-**Depends on**: v1.0
-**Requirements**: PORTAL-01, PORTAL-02, UI-01
-**Plans**: 0 plans
+- [x] Phase 5: Doctor Portal & UI Polish (1/1 plans) — completed 2026-04-26
+- [x] Phase 6: Firebase Auth Middleware (1/1 plans) — completed 2026-04-26
 
-#### Phase 06: Firebase Auth Middleware
-**Goal**: Secure the backend telemetry routes and frontend components with Firebase Authentication.
-**Depends on**: 05
-**Requirements**: AUTH-01, AUTH-02
-**Plans**: 0 plans
+</details>
 
 ## Progress
 
@@ -39,5 +33,5 @@
 | 2. Rate Est       | v1.0      | 1/1            | Complete    | 2026-04-26 |
 | 3. AI Benchmark   | v1.0      | 1/1            | Complete    | 2026-04-26 |
 | 4. Edge UI        | v1.0      | 1/1            | Complete    | 2026-04-26 |
-| 5. Doctor Portal  | v1.1      | 0/0            | Not started | -          |
-| 6. Firebase Auth  | v1.1      | 0/0            | Not started | -          |
+| 5. Doctor Portal  | v1.1      | 1/1            | Complete    | 2026-04-26 |
+| 6. Firebase Auth  | v1.1      | 1/1            | Complete    | 2026-04-26 |
