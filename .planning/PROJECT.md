@@ -6,8 +6,14 @@ NeoPulse AI is a non-contact neonatal monitoring system that uses a smartphone c
 ## Core Value
 Provides affordable, hardware-free monitoring to enable early detection of neonatal risks at home, particularly for underserved rural populations.
 
-## Current State (v1.0 MVP)
-Shipped the core foundation of NeoPulse. Transitioned the initial frontend prototype to a robust Python-based backend that handles Server-Sent Events, runs the EVM pipeline with SciPy, and utilizes a Scikit-Learn Random Forest model for Apnea detection.
+## Current Milestone: v1.1 Security & Portal
+
+**Goal:** Secure the clinical data pipeline with Firebase authentication and build the historical dashboard for doctors.
+
+**Target features:**
+- Firebase Auth Middleware
+- Doctor Portal Dashboard
+- UI AR Overlay Sync
 
 ## Target Audience
 - New parents (especially rural/underserved)

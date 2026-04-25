@@ -19,8 +19,17 @@
 
 ### 🚧 v1.1 Security & Portal (In Progress / Planned)
 
-- [ ] Phase 5: Doctor Portal & UI Polish (0 plans)
-- [ ] Phase 6: Firebase Auth Middleware (0 plans)
+#### Phase 05: Doctor Portal & UI Polish
+**Goal**: Build the clinical visualization portal and synchronize UI AR bounding boxes.
+**Depends on**: v1.0
+**Requirements**: PORTAL-01, PORTAL-02, UI-01
+**Plans**: 0 plans
+
+#### Phase 06: Firebase Auth Middleware
+**Goal**: Secure the backend telemetry routes and frontend components with Firebase Authentication.
+**Depends on**: 05
+**Requirements**: AUTH-01, AUTH-02
+**Plans**: 0 plans
 
 ## Progress
 
