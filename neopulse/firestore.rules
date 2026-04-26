@@ -1,0 +1,24 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    match /sessions/{sessionId} {
+      // The session document itself defines who the parent and linked doctor are.
+      // E.g., { parentUid: "user123", doctorUid: "doc456" }
+      allow read: if request.auth != null && request.auth.uid == resource.data.doctorUid;
+      allow write: if request.auth != null && request.auth.uid == resource.data.parentUid;
+      
+      // Events Subcollection
+      match /events/{timestamp} {
+        // Enforce strict upload: only the specific parent linked to this session can write telemetry
+        allow write: if request.auth != null && 
+                     get(/databases/$(database)/documents/sessions/$(sessionId)).data.parentUid == request.auth.uid;
+                     
+        // Enforce strict read: only the specific linked doctor can query telemetry
+        allow read: if request.auth != null && 
+                    get(/databases/$(database)/documents/sessions/$(sessionId)).data.doctorUid == request.auth.uid;
+      }
+    }
+    
+  }
+}

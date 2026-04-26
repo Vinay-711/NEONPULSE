@@ -1,0 +1,4 @@
+DATA_DIR = './data'
+SAMPLE_RATE = 250
+HR_NORMAL = (100, 160)
+RR_NORMAL = (30, 60)

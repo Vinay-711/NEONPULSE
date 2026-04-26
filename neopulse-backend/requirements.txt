@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-multipart
+numpy
+scipy
+wfdb
+scikit-learn
+pandas
+matplotlib
+python-dotenv
+aiofiles
+opencv-python-headless
+joblib

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "moduleResolution": "node",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "ui_types.d.ts",
+    "types.d.ts"
+  ]
+}

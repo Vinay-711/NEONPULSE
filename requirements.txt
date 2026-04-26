@@ -1,0 +1,6 @@
+opencv-python
+numpy
+scipy
+tflite-runtime
+matplotlib
+pillow

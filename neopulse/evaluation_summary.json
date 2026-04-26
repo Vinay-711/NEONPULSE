@@ -1,0 +1,35 @@
+{
+    "dataset_size": 3000,
+    "heart_rate_bpm": {
+        "MAE": 3.784,
+        "RMSE": 6.319,
+        "mean_bias": 0.254,
+        "limits_of_agreement": [
+            -12.121,
+            12.629
+        ]
+    },
+    "respiratory_rate_bpm": {
+        "MAE": 2.123,
+        "RMSE": 3.405,
+        "mean_bias": 0.039,
+        "limits_of_agreement": [
+            -6.634,
+            6.712
+        ]
+    },
+    "classification_performance": {
+        "NORMAL": {
+            "sensitivity": 0.9527,
+            "specificity": 0.9875
+        },
+        "CAUTION": {
+            "sensitivity": 0.8421,
+            "specificity": 0.9583
+        },
+        "EMERGENCY": {
+            "sensitivity": 0.9618,
+            "specificity": 0.9886
+        }
+    }
+}

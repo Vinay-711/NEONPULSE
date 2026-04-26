@@ -1,0 +1,17 @@
+{
+  "name": "neopulse-frontend",
+  "version": "2.0.0",
+  "description": "NeoPulse UI Dashboard",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/ios": "^6.0.0"
+  }
+}

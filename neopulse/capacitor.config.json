@@ -1,0 +1,6 @@
+{
+  "appId": "com.neopulse.health",
+  "appName": "NeoPulse",
+  "webDir": ".",
+  "bundledWebRuntime": false
+}

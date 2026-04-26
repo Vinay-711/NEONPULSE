@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+neon.zip
+node_modules/
+*.egg-info/
+dist/
+build/
+.env
+
+# Large data files (94MB) - download separately
+neopulse-backend/data/apnea-ecg/*.dat

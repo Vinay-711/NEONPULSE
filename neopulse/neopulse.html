@@ -1,0 +1,2300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#ffffff">
+  <title>NeoPulse — AI Neonatal Vitals Monitor</title>
+  <meta name="description" content="AI-powered contactless neonatal vital signs monitoring using Euler Video Magnification">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap');
+
+    :root {
+      --bg: #fafbfc; --surface: #fff;
+      --accent: #16a34a; --accent-light: #dcfce7; --accent-bg: #f0fdf4;
+      --warning: #d97706; --danger: #dc2626;
+      --text: #0f172a; --text2: #64748b; --text3: #cbd5e1;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      height: 100dvh; display: flex; flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden; -webkit-tap-highlight-color: transparent;
+      padding-top: env(safe-area-inset-top);
+    }
+    .mono { font-family: 'DM Mono', monospace; }
+
+    .app-container { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 20px 10px; flex-shrink: 0; z-index: 10;
+      background: var(--surface);
+    }
+    .logo {
+      font-size: 16px; font-weight: 600; color: var(--text);
+      display: flex; align-items: center; gap: 8px; letter-spacing: -0.3px;
+    }
+    .logo::before {
+      content: ''; width: 6px; height: 6px;
+      background: var(--accent); border-radius: 50%;
+      display: inline-block;
+    }
+    @keyframes softPulse {
+      0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+    }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .tech-badges, .tech-badge { display: none; }
+
+    .status-pill {
+      padding: 4px 12px; border-radius: 20px;
+      font-weight: 500; font-size: 10px;
+      letter-spacing: 1px; text-transform: uppercase;
+      border: none;
+    }
+    .status-pill.standby { color: var(--text2); background: #f1f5f9; }
+    .status-pill.analysing { color: var(--accent); background: var(--accent-light); }
+    @keyframes statusGlow { 0%,100%{} 50%{} }
+    .status-pill.paused { color: var(--warning); background: #fef3c7; }
+    .status-pill.complete { color: var(--accent); background: var(--accent-light); }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--accent-blue);
+      outline-offset: 3px;
+    }
+
+    .main-grid { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    .right-column, .left-column {
+      display: flex; flex-direction: column; gap: 16px;
+      overflow-y: auto; padding: 8px 20px 32px;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .right-column::-webkit-scrollbar, .left-column::-webkit-scrollbar { display: none; }
+
+    .tab-section { display: none; flex: 1; overflow: hidden; }
+    .tab-section.active { display: flex; flex-direction: column; }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      display: flex; justify-content: space-around; align-items: center;
+      padding: 6px 0 calc(4px + env(safe-area-inset-bottom));
+      flex-shrink: 0; z-index: 10;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 2px; padding: 6px 20px; border-radius: 10px;
+      cursor: pointer; background: transparent; border: none;
+    }
+    .nav-item .nav-icon { font-size: 18px; opacity: 0.3; transition: opacity 0.2s; }
+    .nav-item .nav-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 9px; font-weight: 500; letter-spacing: 0.5px;
+      color: var(--text2);
+    }
+    .nav-item.active .nav-icon { opacity: 1; }
+    .nav-item.active .nav-label { color: var(--accent); }
+
+    /* Clean panels */
+    .panel {
+      background: transparent; border: none;
+      border-radius: 0; padding: 0;
+      display: flex; flex-direction: column;
+    }
+    .panel:hover {} .panel::before { display: none; }
+
+    .panel-title {
+      font-size: 11px; text-transform: uppercase;
+      letter-spacing: 1.5px; color: var(--text2);
+      margin: 0 0 14px 0; font-weight: 500;
+    }
+    .panel-title::before { display: none; }
+
+    /* Video Input Components */
+    .video-panel {
+      flex: 1;
+    }
+    
+    .video-panel::before {
+      display: none;
+    }
+
+    /* Drop Zone — invisible */
+    .drop-zone {
+      flex: 1; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; gap: 4px;
+      border: 1px solid var(--border);
+      border-radius: 16px; cursor: pointer; min-height: 120px;
+      background: var(--surface);
+    }
+    .drop-zone.dragover { border-color: var(--accent); background: var(--accent-bg); }
+    .drop-zone:hover { border-color: #94a3b8; }
+    .drop-text {
+      color: var(--text2); text-align: center;
+      font-size: 12px; line-height: 1.6; pointer-events: none;
+    }
+
+    .media-container {
+      position: relative; flex: 1;
+      background: #111; border-radius: 14px;
+      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 180px;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    /* Scanning Line */
+    .scan-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: scanLoop 2s linear infinite;
+      pointer-events: none;
+      z-index: 10;
+      display: none;
+    }
+
+    @keyframes scanLoop {
+      0% { top: 0%; opacity: 0; }
+      10% { opacity: 0.7; }
+      90% { opacity: 0.7; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    /* Waveform Visualizers */
+    .wave-container {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .wave-label {
+      font-size: 10px;
+      color: var(--text2);
+      letter-spacing: 1px;
+      font-weight: 500;
+    }
+
+    .wave-canvas {
+      width: 100%; height: 40px;
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+
+    /* Media Controls */
+    .controls-bar {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      font-family: 'Inter', sans-serif;
+      padding: 14px 20px; border-radius: 14px;
+      font-weight: 600; font-size: 13px;
+      cursor: pointer; text-transform: none;
+      border: none; min-height: 48px;
+    }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+      flex: 2; font-weight: 600;
+    }
+    .btn-primary:active { opacity: 0.8; }
+    .btn-secondary {
+      background: #f1f5f9; color: var(--text); flex: 1;
+    }
+    .btn-danger {
+      background: #fef2f2; color: var(--danger); flex: 1;
+    }
+
+    .log-panel {
+      height: 70px; background: transparent;
+      border-radius: 0; padding: 8px 0;
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .log-entry { color: var(--text2); font-size: 10px; margin: 0; }
+    .log-entry.error { color: var(--danger); }
+
+    .vital-panel, .alert-panel { flex: 1; }
+    .vital-panel::before, .alert-panel::before { display: none; }
+
+    .placeholder-text {
+      color: var(--text3); font-size: 12px;
+      text-align: center; margin: auto;
+    }
+
+    /* Vitals — clean grid */
+    .vitals-container {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    }
+    .vital-card {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .vital-card:last-child { grid-column: 1 / -1; }
+    .vital-header { display: flex; justify-content: space-between; align-items: center; }
+    .vital-label { font-size: 10px; color: var(--text2); letter-spacing: 0.5px; font-weight: 500; }
+    .vital-range { font-size: 9px; color: var(--text3); }
+    .vital-value-row { display: flex; align-items: baseline; gap: 4px; }
+    .vital-number { font-size: 40px; font-weight: 300; color: var(--text); letter-spacing: -2px; }
+    .vital-unit { font-size: 12px; color: var(--text2); font-weight: 400; }
+    .vital-bar-bg { display: none; }
+    .vital-bar-fill { display: none; }
+
+    /* Alert Card — minimal */
+    .alert-card {
+      padding: 12px 0; display: flex; align-items: center; gap: 10px;
+      margin-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .alert-card.normal {} .alert-card.caution {} .alert-card.emergency {}
+    @keyframes pulseRed { 0%,100%{} 50%{} }
+
+    .alert-icon { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .alert-icon.normal { background: var(--accent); }
+    .alert-icon.caution { background: var(--warning); }
+    .alert-icon.emergency { background: var(--danger); }
+
+    .alert-text-container { display: flex; flex-direction: column; gap: 1px; }
+    .alert-title { font-size: 13px; font-weight: 500; color: var(--text); }
+    .alert-desc { font-size: 11px; color: var(--text2); }
+
+    /* Extra Guidance & Pattern UI */
+    #extraUiSection {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .guidance-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .guidance-card {
+      background: #f8fafc;
+      border-radius: 8px; padding: 10px 12px;
+      display: flex; gap: 10px; align-items: center;
+      border-left: 3px solid;
+    }
+    .guidance-card.caution { border-left-color: var(--warning); }
+    .guidance-card.emergency { border-left-color: var(--danger); }
+    .guidance-circle {
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 11px; color: #fff; flex-shrink: 0;
+    }
+    .guidance-circle.caution { background: var(--warning); }
+    .guidance-circle.emergency { background: var(--danger); }
+    .guidance-text {
+      font-size: 12px; color: var(--text); line-height: 1.4;
+    }
+    .pattern-section {
+      background: #f8fafc;
+      border-radius: 8px; padding: 14px;
+      display: flex; flex-direction: column; gap: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .pattern-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      height: 32px;
+    }
+
+    .pattern-label {
+      width: 65px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .pattern-label.green { color: var(--accent); }
+    .pattern-label.caution { color: var(--warning); }
+    .pattern-label.emergency { color: var(--danger); }
+
+    .pattern-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 100%;
+      flex-grow: 1;
+    }
+
+    .pattern-bar {
+      flex: 1;
+      border-radius: 2px;
+      transition: height 0.3s ease, background-color 0.3s ease;
+    }
+
+    .pattern-bar.norm {
+      background-color: rgba(16, 185, 129, 0.3);
+    }
+    /* ====== AR OVERLAY — WHITE ====== */
+    .ar-overlay-modal {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.98);
+      z-index: 9999; display: flex; flex-direction: column;
+      padding: 20px; overflow-y: auto;
+      animation: arFadeIn 0.3s ease;
+    }
+    @keyframes arFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .ar-overlay-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px;
+    }
+    .ar-zone-badge {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 20px;
+      font-weight: 600; font-size: 11px; letter-spacing: 1.5px;
+    }
+    .ar-zone-badge.emergency { background: #fef2f2; color: var(--danger); }
+    .ar-zone-badge.caution { background: #fef3c7; color: var(--warning); }
+    .ar-zone-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      animation: arPulse 1s infinite;
+    }
+    .ar-zone-badge.emergency .ar-zone-dot { background: var(--danger); }
+    .ar-zone-badge.caution .ar-zone-dot { background: var(--warning); }
+    @keyframes arPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .ar-dismiss-btn {
+      background: #f1f5f9; border: none;
+      color: var(--text2); padding: 6px 16px; border-radius: 8px;
+      cursor: pointer; font-size: 11px; font-weight: 500;
+    }
+    .ar-content-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+      flex: 1; min-height: 0;
+    }
+    .ar-canvas-panel { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    #arBabyCanvas {
+      background: #f8fafc; border-radius: 16px;
+      width: 100%; max-width: 400px; height: auto; aspect-ratio: 4 / 5;
+    }
+    .ar-canvas-label { color: var(--text3); font-size: 9px; letter-spacing: 1.5px; }
+    .ar-info-panel { display: flex; flex-direction: column; gap: 14px; }
+    .ar-action-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; text-align: center;
+    }
+    .ar-action-card.caution { border-color: #fde68a; background: #fffbeb; }
+    .ar-action-card.emergency { border-color: #fecaca; background: #fef2f2; }
+    @keyframes arCardPulse { 0%,100%{} 50%{} }
+    .ar-action-icon { font-size: 28px; margin-bottom: 6px; }
+    .ar-action-title { color: var(--text); font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .ar-action-desc { color: var(--text2); font-size: 12px; }
+    .ar-steps-container { display: flex; flex-direction: column; gap: 6px; }
+    .ar-step {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 10px;
+      opacity: 0.4; transition: all 0.3s ease;
+    }
+    .ar-step.active { opacity: 1; background: #f8fafc; }
+    .ar-step.active.caution { background: #fffbeb; }
+    .ar-step.done { opacity: 0.6; }
+    .ar-step.done .ar-step-num { background: var(--accent); color: #fff; }
+    .ar-step-num {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #f1f5f9; color: var(--text2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; flex-shrink: 0;
+    }
+    .ar-step.active .ar-step-num { background: var(--danger); color: #fff; }
+    .ar-step.active.caution .ar-step-num { background: var(--warning); color: #fff; }
+    .ar-step-text { color: var(--text2); font-size: 12px; line-height: 1.4; }
+    .ar-step.active .ar-step-text { color: var(--text); font-weight: 500; }
+    .ar-breathing-section {
+      padding: 14px 0; border-top: 1px solid var(--border);
+    }
+    .ar-breathing-title { color: var(--text2); font-size: 9px; letter-spacing: 1.5px; margin-bottom: 10px; }
+    .ar-breathing-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .ar-breathing-label { font-size: 9px; font-weight: 600; letter-spacing: 0.5px; width: 55px; flex-shrink: 0; }
+    .ar-breathing-label.normal { color: var(--accent); }
+    .ar-breathing-label.baby { color: var(--danger); }
+    #arNormalBreathCanvas, #arBabyBreathCanvas {
+      background: #f1f5f9; border-radius: 6px;
+      width: 100%; max-width: 300px; height: 40px;
+    }
+    .ar-voice-prompt {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 0; border-top: 1px solid var(--border);
+    }
+    @keyframes voicePulse { 0%,100%{} 50%{} }
+    .ar-voice-icon { font-size: 16px; }
+    .ar-voice-text { color: var(--text2); font-size: 12px; font-style: italic; }
+
+    /* Maps */
+    .ar-maps-section {
+      padding: 14px 0; border-top: 1px solid var(--border);
+    }
+    .ar-maps-title { font-size: 9px; font-weight: 600; letter-spacing: 1.5px; color: var(--text2); margin-bottom: 10px; }
+    .ar-maps-frame { border-radius: 12px; overflow: hidden; }
+    .ar-maps-hint { font-size: 9px; color: var(--text3); margin-top: 6px; text-align: center; }
+
+    /* SOS — clean */
+    .ar-sos-btn {
+      width: 100%; padding: 16px;
+      background: #dc2626; border: none;
+      border-radius: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .ar-sos-btn:active { opacity: 0.8; }
+    .ar-sos-icon { font-size: 20px; }
+    .ar-sos-text { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; color: #fff; letter-spacing: 1px; }
+    @keyframes sosPulse { 0%,100%{} 50%{} }
+
+    @media (max-width: 768px) { .ar-content-grid { grid-template-columns: 1fr; } }
+
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Top Bar -->
+    <header>
+      <div class="logo">NeoPulse</div>
+      <div class="header-right">
+        <div class="tech-badges">
+          <span class="tech-badge active">EVM</span>
+          <span class="tech-badge active">Firebase</span>
+          <span class="tech-badge">TensorFlow</span>
+          <span class="tech-badge">Cloud</span>
+        </div>
+        <div id="connStatus" style="width: 10px; height: 10px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 8px rgba(0,245,160,0.5);" title="Backend"></div>
+        <div class="status-pill mono standby" id="statusPill">STANDBY</div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="main-grid">
+      
+      <!-- Tab 1: Monitor -->
+      <div class="tab-section active" id="tabMonitor">
+      <div class="left-column">
+        
+        <!-- Video Input Panel -->
+        <div class="panel video-panel">
+          <h2 class="panel-title" style="display: flex; justify-content: space-between;">
+            Video Input <span id="fpsCounter" class="mono" style="font-size: 12px; color: var(--text-muted); text-transform: none;">FPS: --</span>
+          </h2>
+          
+          <!-- Drag & Drop Upload Zone -->
+          <div id="dropZone" class="drop-zone">
+            <input type="file" id="fileInput" accept=".mp4,.mov,.webm" hidden>
+            <div class="drop-text mono">Drag & Drop Patient Video Here<br><br>or Click to Browse (.mp4, .mov, .webm)</div>
+          </div>
+          
+          <div id="uploadProgressContainer" style="display: none; width: 100%; height: 4px; background: rgba(255,255,255,0.06); border-radius: 4px; margin-top: 14px; overflow: hidden;">
+             <div id="uploadProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan)); transition: width 0.2s;"></div>
+          </div>
+
+          <div id="datasetContainer" style="margin-top: 16px; display: flex; gap: 12px; justify-content: center; align-items: center;">
+             <button id="btnRunDemo" class="btn btn-primary" style="padding: 12px 28px; font-size: 13px;">▶ Run Demo</button>
+             <button id="btnLoadDataset" class="btn btn-secondary" style="padding: 10px 18px; font-size: 12px;">Load Dataset</button>
+             <select id="datasetSelect" class="mono" style="display: none; background: var(--surface-solid); color: var(--text-main); border: 1px solid rgba(99,102,241,0.2); padding: 8px 12px; border-radius: 8px; outline: none; font-size: 12px;"></select>
+          </div>
+
+          <!-- Video Player & AR Canvas -->
+          <div id="mediaContainer" class="media-container" style="display: none;">
+            <video id="videoPlayer" playsinline muted></video>
+            <canvas id="overlayCanvas"></canvas>
+            <div id="scanLine" class="scan-line"></div>
+          </div>
+
+          <!-- Waveform Canvases -->
+          <div id="waveContainer" class="wave-container" style="display: none;">
+            <div class="wave-label mono">HEART RATE SIGNAL (EVM COLOUR CHANNEL)</div>
+            <canvas id="hrCanvas" class="wave-canvas"></canvas>
+            <div class="wave-label mono">RESPIRATORY SIGNAL (EVM MOTION CHANNEL)</div>
+            <canvas id="rrCanvas" class="wave-canvas"></canvas>
+          </div>
+
+          <!-- Action Controls -->
+          <div id="controlsBar" class="controls-bar" style="display: none;">
+            <button id="btnStart" class="btn btn-primary">Start Analysis</button>
+            <button id="btnPause" class="btn btn-secondary">Pause</button>
+            <button id="btnReset" class="btn btn-danger">Reset</button>
+          </div>
+        </div>
+
+        <!-- Terminal Event Log -->
+        <div class="log-panel mono" id="logPanel">
+          <p class="log-entry">> System initialized. Offline models loaded.</p>
+          <p class="log-entry">> Awaiting media input...</p>
+        </div>
+
+      </div>
+      </div>
+
+      <!-- Tab 2: Vitals -->
+      <div class="tab-section" id="tabVitals">
+      <div class="right-column">
+        
+        <!-- Vitals Metrics -->
+        <div class="panel vital-panel">
+          <h2 class="panel-title">Vital Signs</h2>
+          
+          <div id="alertCard" class="alert-card normal" style="display: none;">
+            <div id="alertIcon" class="alert-icon normal"></div>
+            <div class="alert-text-container">
+              <div id="alertTitle" class="alert-title">ALL NORMAL</div>
+              <div id="alertDesc" class="alert-desc">Vitals are within expected ranges</div>
+            </div>
+          </div>
+          
+          <div class="vitals-container" style="display: none;" id="vitalsContainer">
+            
+            <div class="vital-card">
+              <div class="vital-header">
+                <span class="vital-label mono">HEART RATE</span>
+                <span class="vital-range mono">NORM: 100–160</span>
+              </div>
+              <div class="vital-value-row">
+                <span class="vital-number mono" id="valHR">--</span>
+                <span class="vital-unit">BPM</span>
+              </div>
+              <div class="vital-bar-bg"><div class="vital-bar-fill" id="barHR"></div></div>
+            </div>
+
+            <div class="vital-card">
+              <div class="vital-header">
+                <span class="vital-label mono">RESPIRATORY RATE</span>
+                <span class="vital-range mono">NORM: 30–60</span>
+              </div>
+              <div class="vital-value-row">
+                <span class="vital-number mono" id="valRR">--</span>
+                <span class="vital-unit">br/min</span>
+              </div>
+              <div class="vital-bar-bg"><div class="vital-bar-fill" id="barRR"></div></div>
+            </div>
+
+            <div class="vital-card">
+              <div class="vital-header">
+                <span class="vital-label mono">SIGNAL CONFIDENCE</span>
+                <span class="vital-range mono">TARGET: >80%</span>
+              </div>
+              <div class="vital-value-row">
+                <span class="vital-number mono" id="valConf">--</span>
+                <span class="vital-unit">%</span>
+              </div>
+              <div class="vital-bar-bg"><div class="vital-bar-fill" id="barConf"></div></div>
+            </div>
+
+          </div>
+          
+          <div id="extraUiSection" style="display: none;">
+            <div class="guidance-section" id="guidanceSection"></div>
+            
+            <div class="pattern-section">
+              <div class="pattern-row">
+                <div class="pattern-label green">Normal</div>
+                <div class="pattern-bars">
+                   <div class="pattern-bar norm" style="height: 30%"></div>
+                   <div class="pattern-bar norm" style="height: 80%"></div>
+                   <div class="pattern-bar norm" style="height: 100%"></div>
+                   <div class="pattern-bar norm" style="height: 80%"></div>
+                   <div class="pattern-bar norm" style="height: 30%"></div>
+                   <div class="pattern-bar norm" style="height: 20%"></div>
+                   <div class="pattern-bar norm" style="height: 30%"></div>
+                   <div class="pattern-bar norm" style="height: 80%"></div>
+                   <div class="pattern-bar norm" style="height: 100%"></div>
+                   <div class="pattern-bar norm" style="height: 80%"></div>
+                   <div class="pattern-bar norm" style="height: 30%"></div>
+                   <div class="pattern-bar norm" style="height: 20%"></div>
+                </div>
+              </div>
+              <div class="pattern-row">
+                <div class="pattern-label" id="babyPatternLabel">Baby now</div>
+                <div class="pattern-bars" id="babyPatternBars">
+                   <!-- dynamic bars -->
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="placeholder-text mono" id="vitalsPlaceholder">[ AWAITING FEED ]</div>
+        </div>
+
+        <!-- Event Log / Alarms -->
+        <div class="panel alert-panel">
+          <h2 class="panel-title">Alert Status</h2>
+          <div class="placeholder-text mono" id="alertPlaceholder">[ EVENT LOG PLACEHOLDER ]</div>
+        </div>
+
+      </div>
+      </div>
+
+      <!-- Tab 3: Log -->
+      <div class="tab-section" id="tabLog">
+        <div class="left-column" style="flex: 1;">
+          <div class="panel" style="flex: 1;">
+            <h2 class="panel-title">Event Log</h2>
+            <div class="log-panel mono" id="logPanel2" style="height: auto; flex: 1;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav" id="bottomNav">
+      <button class="nav-item active" data-tab="tabMonitor">
+        <span class="nav-icon">📹</span>
+        <span class="nav-label">Monitor</span>
+      </button>
+      <button class="nav-item" data-tab="tabVitals">
+        <span class="nav-icon">💓</span>
+        <span class="nav-label">Vitals</span>
+      </button>
+      <button class="nav-item" data-tab="tabLog">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Log</span>
+      </button>
+      <button class="nav-item nav-sos" id="navSosBtn">
+        <span class="nav-icon">🆘</span>
+        <span class="nav-label" style="color: var(--danger);">SOS</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- ====== AR EMERGENCY OVERLAY ====== -->
+  <div id="arOverlayModal" class="ar-overlay-modal" style="display: none;">
+    <div class="ar-overlay-header">
+      <div class="ar-zone-badge" id="arZoneBadge">
+        <span class="ar-zone-dot" id="arZoneDot"></span>
+        <span class="ar-zone-text" id="arZoneText">EMERGENCY</span>
+      </div>
+      <button class="ar-dismiss-btn" id="arDismissBtn">✕ DISMISS</button>
+    </div>
+    
+    <div class="ar-content-grid">
+      <!-- Left: Animated Baby AR Canvas -->
+      <div class="ar-canvas-panel">
+        <canvas id="arBabyCanvas" width="400" height="500"></canvas>
+        <div class="ar-canvas-label mono">AR GUIDANCE OVERLAY</div>
+      </div>
+      
+      <!-- Right: Step-by-step + Breathing -->
+      <div class="ar-info-panel">
+        <!-- Emergency Action Card -->
+        <div class="ar-action-card" id="arActionCard">
+          <div class="ar-action-icon" id="arActionIcon">🚨</div>
+          <div class="ar-action-title" id="arActionTitle">GO TO HOSPITAL NOW</div>
+          <div class="ar-action-desc" id="arActionDesc">Critical breathing pattern detected</div>
+        </div>
+        
+        <!-- Step-by-step AR Guidance -->
+        <div class="ar-steps-container" id="arStepsContainer">
+          <div class="ar-step active" id="arStep1">
+            <div class="ar-step-num">1</div>
+            <div class="ar-step-text">Open baby's airway by tilting the head slightly back</div>
+          </div>
+          <div class="ar-step" id="arStep2">
+            <div class="ar-step-num">2</div>
+            <div class="ar-step-text">Check for chest movement for 5 seconds</div>
+          </div>
+          <div class="ar-step" id="arStep3">
+            <div class="ar-step-num">3</div>
+            <div class="ar-step-text">If no breathing, call emergency services immediately</div>
+          </div>
+          <div class="ar-step" id="arStep4">
+            <div class="ar-step-num">4</div>
+            <div class="ar-step-text">Do NOT press on chest — go to hospital now</div>
+          </div>
+        </div>
+        
+        <!-- Breathing Pattern Comparison -->
+        <div class="ar-breathing-section">
+          <div class="ar-breathing-title mono">BREATHING PATTERN COMPARISON</div>
+          <div class="ar-breathing-row">
+            <span class="ar-breathing-label normal">NORMAL</span>
+            <canvas id="arNormalBreathCanvas" width="240" height="40"></canvas>
+          </div>
+          <div class="ar-breathing-row">
+            <span class="ar-breathing-label baby" id="arBabyBreathLabel">BABY NOW</span>
+            <canvas id="arBabyBreathCanvas" width="240" height="40"></canvas>
+          </div>
+        </div>
+        
+        <!-- Voice Prompt Display -->
+        <div class="ar-voice-prompt" id="arVoicePrompt">
+          <span class="ar-voice-icon">🔊</span>
+          <span class="ar-voice-text" id="arVoiceText">Listening...</span>
+        </div>
+        
+        <!-- Google Maps: Nearest Hospitals (EMERGENCY only) -->
+        <div class="ar-maps-section" id="arMapsSection" style="display: none;">
+          <div class="ar-maps-title mono">📍 NEAREST HOSPITALS</div>
+          <div class="ar-maps-frame">
+            <iframe id="arMapsIframe" width="100%" height="180" style="border:0; border-radius: 10px;" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" src=""></iframe>
+          </div>
+          <div class="ar-maps-hint mono">Based on your current location</div>
+        </div>
+        
+        <!-- SOS Emergency Call Button -->
+        <button class="ar-sos-btn" id="arSosBtn">
+          <span class="ar-sos-icon">🆘</span>
+          <span class="ar-sos-text">CALL EMERGENCY SOS</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const mediaContainer = document.getElementById('mediaContainer');
+    const videoPlayer = document.getElementById('videoPlayer');
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    const controlsBar = document.getElementById('controlsBar');
+    const logPanel = document.getElementById('logPanel');
+    const statusPill = document.getElementById('statusPill');
+    
+    const waveContainer = document.getElementById('waveContainer');
+    const hrCanvas = document.getElementById('hrCanvas');
+    const rrCanvas = document.getElementById('rrCanvas');
+    const hrCtx = hrCanvas.getContext('2d');
+    const rrCtx = rrCanvas.getContext('2d');
+    
+    const hrFilteredGlobal = new Float32Array(300);
+    const rrFilteredGlobal = new Float32Array(300);
+    
+    const btnStart = document.getElementById('btnStart');
+    const btnPause = document.getElementById('btnPause');
+    const btnReset = document.getElementById('btnReset');
+
+    let currentVideoUrl = null;
+    let activeFileId = null;
+    let eventSource = null;
+
+    // --- Backend connection ---
+    const BACKEND_URL = 'http://localhost:8000';
+    const connStatus = document.getElementById('connStatus');
+    const uploadProgressContainer = document.getElementById('uploadProgressContainer');
+    const uploadProgressBar = document.getElementById('uploadProgressBar');
+    const btnLoadDataset = document.getElementById('btnLoadDataset');
+    const datasetSelect = document.getElementById('datasetSelect');
+
+    fetch(`${BACKEND_URL}/health`)
+      .then(res => res.json())
+      .then(() => {
+        connStatus.style.backgroundColor = '#10b981';
+        connStatus.style.boxShadow = '0 0 6px rgba(16, 185, 129, 0.4)';
+      })
+      .catch(() => {
+        connStatus.style.backgroundColor = '#ef4444';
+        connStatus.style.boxShadow = '0 0 6px rgba(239, 68, 68, 0.4)';
+        logMessage('Failed to connect to backend.', true);
+      });
+
+    // --- EVM Variables ---
+    const FPS = 30;
+    const BUFFER_SIZE = 300;
+    const hrBuffer = new Float32Array(BUFFER_SIZE);
+    const rrBuffer = new Float32Array(BUFFER_SIZE);
+    let bufferIndex = 0;
+    let frameCount = 0;
+    let lastLogTime = 0;
+    
+    let smoothedHR = 130; 
+    let smoothedRR = 40;  
+    
+    let isAnalyzing = false;
+    let animationId = null;
+    
+    let lastFrameTime = performance.now();
+    let frameTimes = [];
+    const fpsCounter = document.getElementById('fpsCounter');
+    const scanLine = document.getElementById('scanLine');
+
+    // AR Bounding Box interpolation state
+    let boxQueue = [];
+    let currentFaceBox = { x: 0, y: 0, w: 0, h: 0 };
+    let targetFaceBox = { x: 0, y: 0, w: 0, h: 0 };
+    let currentChestBox = { x: 0, y: 0, w: 0, h: 0 };
+    let targetChestBox = { x: 0, y: 0, w: 0, h: 0 };
+
+    // ====== EMERGENCY AR SYSTEM ======
+    let audioCtx = null;
+    let arAnimationId = null;
+    let arStepIndex = 0;
+    let arStepTimer = null;
+    let arOverlayActive = false;
+    let lastAlarmTime = 0;
+    
+    // AR DOM refs
+    const arModal = document.getElementById('arOverlayModal');
+    const arDismissBtn = document.getElementById('arDismissBtn');
+    const arZoneBadge = document.getElementById('arZoneBadge');
+    const arZoneText = document.getElementById('arZoneText');
+    const arActionCard = document.getElementById('arActionCard');
+    const arActionIcon = document.getElementById('arActionIcon');
+    const arActionTitle = document.getElementById('arActionTitle');
+    const arActionDesc = document.getElementById('arActionDesc');
+    const arBabyCanvas = document.getElementById('arBabyCanvas');
+    const arBabyCtx = arBabyCanvas.getContext('2d');
+    const arNormalCanvas = document.getElementById('arNormalBreathCanvas');
+    const arBabyBreathCanvas = document.getElementById('arBabyBreathCanvas');
+    const arVoiceText = document.getElementById('arVoiceText');
+    const arBabyBreathLabel = document.getElementById('arBabyBreathLabel');
+    const arMapsSection = document.getElementById('arMapsSection');
+    const arMapsIframe = document.getElementById('arMapsIframe');
+    const arSosBtn = document.getElementById('arSosBtn');
+
+    // --- Sound Alert System (Web Audio API) ---
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return audioCtx;
+    }
+    
+    function playAlarmSound(type) {
+      const now = Date.now();
+      if (now - lastAlarmTime < 3000) return; // debounce 3s
+      lastAlarmTime = now;
+      
+      const ctx = getAudioCtx();
+      
+      if (type === 'EMERGENCY') {
+        // Urgent triple-beep alarm
+        [0, 200, 400].forEach(delay => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.type = 'square';
+          osc.frequency.value = 880;
+          gain.gain.setValueAtTime(0.3, ctx.currentTime + delay/1000);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay/1000 + 0.15);
+          osc.start(ctx.currentTime + delay/1000);
+          osc.stop(ctx.currentTime + delay/1000 + 0.15);
+        });
+      } else {
+        // Caution: double-tone
+        [0, 300].forEach((delay, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.value = i === 0 ? 660 : 440;
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + delay/1000);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay/1000 + 0.25);
+          osc.start(ctx.currentTime + delay/1000);
+          osc.stop(ctx.currentTime + delay/1000 + 0.25);
+        });
+      }
+    }
+    
+    // --- Voice Prompt System (Speech Synthesis) ---
+    function speakAlert(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9; utterance.pitch = 1.1; utterance.volume = 1.0;
+      utterance.lang = 'en-US';
+      arVoiceText.textContent = text;
+      window.speechSynthesis.speak(utterance);
+    }
+    
+    // --- AR Baby Figure Animation ---
+    function drawARBaby(t, alertType, cssW, cssH) {
+      const ctx = arBabyCtx;
+      const W = cssW || 400;
+      const H = cssH || 500;
+      // Clear at current transform (full canvas)
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, arBabyCanvas.width, arBabyCanvas.height);
+      ctx.restore();
+      
+      const isEmergency = alertType === 'EMERGENCY';
+      const accentColor = isEmergency ? '#ef4444' : '#f59e0b';
+      const accentAlpha = isEmergency ? 'rgba(239,68,68,' : 'rgba(245,158,11,';
+      
+      // Scale drawing to fit canvas while maintaining design proportions
+      const designW = 400, designH = 500;
+      const sx = W / designW, sy = H / designH;
+      ctx.save();
+      ctx.scale(sx, sy);
+      
+      // Background glow
+      const glow = ctx.createRadialGradient(designW/2, designH/2, 50, designW/2, designH/2, 250);
+      glow.addColorStop(0, accentAlpha + '0.08)');
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, designW, designH);
+      
+      // Baby body (simplified figure)
+      const bodyX = designW/2, bodyY = 240;
+      
+      // Blanket/surface
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.beginPath();
+      ctx.ellipse(bodyX, 380, 160, 30, 0, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Body
+      const breathAmp = isEmergency ? 2 : 8;
+      const breathFreq = isEmergency ? 0.3 : 0.7;
+      const chestExpand = Math.sin(t * breathFreq * Math.PI * 2) * breathAmp;
+      
+      ctx.fillStyle = 'rgba(255,220,200,0.8)';
+      ctx.beginPath();
+      ctx.ellipse(bodyX, bodyY + 80, 50 + chestExpand, 70, 0, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Head
+      const headTilt = Math.sin(t * 0.5) * 3;
+      ctx.save();
+      ctx.translate(bodyX, bodyY - 20);
+      ctx.rotate(headTilt * Math.PI / 180);
+      
+      ctx.fillStyle = 'rgba(255,220,200,0.9)';
+      ctx.beginPath();
+      ctx.arc(0, 0, 35, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Eyes (closed)
+      ctx.strokeStyle = 'rgba(100,80,70,0.6)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(-12, -5, 6, 0, Math.PI); ctx.stroke();
+      ctx.beginPath(); ctx.arc(12, -5, 6, 0, Math.PI); ctx.stroke();
+      
+      // Mouth
+      ctx.beginPath(); ctx.arc(0, 12, 5, 0.2, Math.PI - 0.2); ctx.stroke();
+      ctx.restore();
+      
+      // Arms
+      ctx.strokeStyle = 'rgba(255,220,200,0.7)';
+      ctx.lineWidth = 12; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(bodyX - 45, bodyY + 60); ctx.lineTo(bodyX - 80, bodyY + 100); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bodyX + 45, bodyY + 60); ctx.lineTo(bodyX + 80, bodyY + 100); ctx.stroke();
+      
+      // Legs
+      ctx.beginPath(); ctx.moveTo(bodyX - 20, bodyY + 140); ctx.lineTo(bodyX - 30, bodyY + 200); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bodyX + 20, bodyY + 140); ctx.lineTo(bodyX + 30, bodyY + 200); ctx.stroke();
+      
+      // === AR GUIDANCE OVERLAYS ===
+      
+      // Head-tilt indicator arrow
+      ctx.save();
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      const arrowPulse = Math.sin(t * 3) * 0.3 + 0.7;
+      ctx.globalAlpha = arrowPulse;
+      
+      // Arrow showing head tilt
+      ctx.beginPath();
+      ctx.moveTo(bodyX + 50, bodyY - 50);
+      ctx.quadraticCurveTo(bodyX + 60, bodyY - 70, bodyX + 40, bodyY - 80);
+      ctx.stroke();
+      // Arrowhead
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(bodyX + 40, bodyY - 80);
+      ctx.lineTo(bodyX + 48, bodyY - 72);
+      ctx.lineTo(bodyX + 35, bodyY - 72);
+      ctx.closePath();
+      ctx.fillStyle = accentColor;
+      ctx.fill();
+      
+      // Label
+      ctx.font = '10px Inter, sans-serif';
+      ctx.fillStyle = accentColor;
+      ctx.fillText('Tilt head slightly', bodyX + 55, bodyY - 55);
+      ctx.restore();
+      
+      // Hand placement indicators (pulsing circles)
+      const handPulse = Math.sin(t * 2) * 0.3 + 0.7;
+      
+      // Left hand zone
+      ctx.save();
+      ctx.globalAlpha = handPulse;
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.arc(bodyX - 70, bodyY + 50, 25, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = '9px Inter, sans-serif';
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillText('Hold here', bodyX - 95, bodyY + 30);
+      ctx.restore();
+      
+      // Right hand zone
+      ctx.save();
+      ctx.globalAlpha = handPulse;
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.arc(bodyX + 70, bodyY + 50, 25, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = '9px Inter, sans-serif';
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillText('Hold here', bodyX + 50, bodyY + 30);
+      ctx.restore();
+      
+      // Chest movement indicator
+      const chestArrow = Math.sin(t * breathFreq * Math.PI * 2);
+      ctx.save();
+      ctx.globalAlpha = 0.8;
+      ctx.strokeStyle = isEmergency ? '#ef4444' : '#10b981';
+      ctx.lineWidth = 1.5;
+      // Up/down arrows on chest
+      const chestY = bodyY + 80;
+      ctx.beginPath();
+      ctx.moveTo(bodyX, chestY - 15 + chestArrow * 5);
+      ctx.lineTo(bodyX, chestY + 15 + chestArrow * 5);
+      ctx.stroke();
+      // Arrow tip
+      const tipDir = chestArrow > 0 ? -1 : 1;
+      ctx.beginPath();
+      ctx.moveTo(bodyX, chestY + tipDir * 15 + chestArrow * 5);
+      ctx.lineTo(bodyX - 5, chestY + tipDir * 10 + chestArrow * 5);
+      ctx.moveTo(bodyX, chestY + tipDir * 15 + chestArrow * 5);
+      ctx.lineTo(bodyX + 5, chestY + tipDir * 10 + chestArrow * 5);
+      ctx.stroke();
+      
+      ctx.font = '9px Inter, sans-serif';
+      ctx.fillStyle = isEmergency ? '#ef4444' : '#10b981';
+      ctx.fillText(isEmergency ? 'No/weak movement' : 'Watch chest', bodyX + 15, chestY);
+      ctx.restore();
+      
+      // "DO NOT PRESS" warning on chest (emergency only)
+      if (isEmergency) {
+        ctx.save();
+        ctx.globalAlpha = Math.sin(t * 4) * 0.3 + 0.7;
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        // X mark over chest
+        ctx.beginPath();
+        ctx.moveTo(bodyX - 15, chestY - 15);
+        ctx.lineTo(bodyX + 15, chestY + 15);
+        ctx.moveTo(bodyX + 15, chestY - 15);
+        ctx.lineTo(bodyX - 15, chestY + 15);
+        ctx.stroke();
+        
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText('DO NOT PRESS', bodyX - 38, chestY + 35);
+        ctx.restore();
+      }
+      
+      // Zone indicator at bottom
+      ctx.save();
+      ctx.fillStyle = accentAlpha + '0.15)';
+      ctx.fillRect(20, designH - 50, designW - 40, 35);
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(20, designH - 50, designW - 40, 35);
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.fillStyle = accentColor;
+      ctx.textAlign = 'center';
+      const zoneLabel = isEmergency ? '🔴 RED ZONE — SEEK IMMEDIATE CARE' : '🟡 YELLOW ZONE — MONITOR CLOSELY';
+      ctx.fillText(zoneLabel, designW/2, designH - 28);
+      ctx.restore();
+      
+      // Restore the design-space scale transform
+      ctx.restore();
+    }
+    
+    // --- Breathing Pattern Comparison Canvases ---
+    function drawBreathingPattern(canvas, freq, color, t, cssW, cssH) {
+      const ctx = canvas.getContext('2d');
+      const W = cssW || 240;
+      const H = cssH || 50;
+      // Clear at identity transform
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+      
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = 0; x < W; x++) {
+        const phase = (x / W) * Math.PI * 6 + t;
+        const y = H/2 + Math.sin(phase * freq) * (H * 0.35);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    
+    // --- AR Step Carousel ---
+    const emergencySteps = [
+      { text: "Open baby's airway by tilting the head slightly back", voice: "Open baby's airway by tilting the head slightly back." },
+      { text: "Check for chest movement for 5 seconds", voice: "Check for chest movement for 5 seconds." },
+      { text: "If no breathing, call emergency services immediately", voice: "If no breathing, call emergency services immediately." },
+      { text: "Do NOT press on chest — go to hospital now", voice: "Do not press on the chest. Go to hospital now." }
+    ];
+    
+    const cautionSteps = [
+      { text: "Baby is breathing abnormally — watch closely", voice: "Baby is breathing abnormally. Watch closely." },
+      { text: "Count breaths for 10 seconds", voice: "Count the baby's breaths for 10 seconds." },
+      { text: "Ensure baby is on their back on a flat surface", voice: "Ensure baby is on their back on a flat surface." },
+      { text: "If breathing worsens, go to hospital immediately", voice: "If breathing worsens, go to hospital immediately." }
+    ];
+    
+    function updateARSteps(steps, type) {
+      const container = document.getElementById('arStepsContainer');
+      const cssClass = type.toLowerCase();
+      
+      container.innerHTML = steps.map((step, i) => `
+        <div class="ar-step ${i === arStepIndex ? 'active ' + cssClass : (i < arStepIndex ? 'done' : '')}" id="arStep${i+1}">
+          <div class="ar-step-num">${i < arStepIndex ? '✓' : i + 1}</div>
+          <div class="ar-step-text">${step.text}</div>
+        </div>
+      `).join('');
+    }
+    
+    // --- Main AR Trigger ---
+    function triggerEmergencyAR(alertType, hr, rr) {
+      // If already showing with a different type, dismiss and re-trigger
+      if (arOverlayActive) {
+        dismissAR();
+        // Small delay to allow cleanup
+        setTimeout(() => {
+          arOverlayActive = false;
+          triggerEmergencyAR(alertType, hr, rr);
+        }, 100);
+        return;
+      }
+      arOverlayActive = true;
+      
+      const isEmergency = alertType === 'EMERGENCY';
+      const steps = isEmergency ? emergencySteps : cautionSteps;
+      
+      // Play alarm sound
+      playAlarmSound(alertType);
+      
+      // Configure overlay UI
+      arZoneBadge.className = 'ar-zone-badge ' + alertType.toLowerCase();
+      arZoneText.textContent = alertType;
+      arActionCard.className = 'ar-action-card ' + alertType.toLowerCase();
+      
+      if (isEmergency) {
+        arActionIcon.textContent = '🚨';
+        arActionTitle.textContent = 'GO TO HOSPITAL NOW';
+        arActionDesc.textContent = `Critical: HR ${Math.round(hr)} BPM, RR ${Math.round(rr)} br/min`;
+        arBabyBreathLabel.textContent = rr < 20 ? 'APNEA' : (rr > 70 ? 'TACHYPNEA' : 'ABNORMAL');
+        arBabyBreathLabel.style.color = '#ef4444';
+      } else {
+        arActionIcon.textContent = '⚠️';
+        arActionTitle.textContent = 'MONITOR CLOSELY';
+        arActionDesc.textContent = `Borderline: HR ${Math.round(hr)} BPM, RR ${Math.round(rr)} br/min`;
+        arBabyBreathLabel.textContent = rr < 30 ? 'BRADYPNEA' : 'TACHYPNEA';
+        arBabyBreathLabel.style.color = '#f59e0b';
+      }
+      
+      // Show overlay
+      arModal.style.display = 'flex';
+      
+      // Voice prompt
+      const voiceMsg = isEmergency 
+        ? `Emergency alert. Baby is breathing ${rr > 70 ? 'too fast' : 'too slowly'}. Go to hospital immediately.`
+        : `Caution. Baby's breathing is ${rr > 60 ? 'elevated' : 'reduced'}. Monitor closely.`;
+      speakAlert(voiceMsg);
+      
+      // Start step carousel — play ONCE through all steps, then stop
+      arStepIndex = 0;
+      updateARSteps(steps, alertType);
+      
+      let stepsPlayed = 1;
+      arStepTimer = setInterval(() => {
+        stepsPlayed++;
+        if (stepsPlayed > steps.length) {
+          clearInterval(arStepTimer);
+          arStepTimer = null;
+          return; // stop — all steps shown
+        }
+        arStepIndex = stepsPlayed - 1;
+        updateARSteps(steps, alertType);
+        speakAlert(steps[arStepIndex].voice);
+      }, 6000);
+      
+      // Google Maps: Show nearest hospitals for EMERGENCY only
+      if (isEmergency) {
+        arMapsSection.style.display = 'block';
+        // Try geolocation
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const lat = pos.coords.latitude;
+              const lng = pos.coords.longitude;
+              arMapsIframe.src = `https://www.google.com/maps/embed/v1/search?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=hospitals+near+me&center=${lat},${lng}&zoom=14`;
+              logMessage(`📍 Location acquired: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+            },
+            () => {
+              // Fallback: generic hospital search
+              arMapsIframe.src = `https://www.google.com/maps/embed/v1/search?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=hospitals+near+me&zoom=13`;
+              logMessage('📍 Location denied — showing general hospital search');
+            },
+            { enableHighAccuracy: true, timeout: 5000 }
+          );
+        } else {
+          arMapsIframe.src = `https://www.google.com/maps/embed/v1/search?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=hospitals+near+me&zoom=13`;
+        }
+      } else {
+        arMapsSection.style.display = 'none';
+        arMapsIframe.src = '';
+      }
+      
+      // DPI-aware canvas sizing — fix pixelation on Retina
+      requestAnimationFrame(() => {
+        const dpr = window.devicePixelRatio || 1;
+        
+        // Size baby canvas
+        const babyRect = arBabyCanvas.getBoundingClientRect();
+        arBabyCanvas.width = Math.round(babyRect.width * dpr);
+        arBabyCanvas.height = Math.round(babyRect.height * dpr);
+        arBabyCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        
+        // Size breathing canvases
+        [arNormalCanvas, arBabyBreathCanvas].forEach(c => {
+          const r = c.getBoundingClientRect();
+          c.width = Math.round(r.width * dpr);
+          c.height = Math.round(r.height * dpr);
+          const ctx2 = c.getContext('2d');
+          ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+        });
+        
+        // Start AR baby animation after canvases are sized
+        let arT = 0;
+        const normalBreathFreq = 1.0;
+        const babyBreathFreq = isEmergency ? (rr > 70 ? 3.0 : 0.2) : (rr > 60 ? 2.0 : 0.5);
+        
+        // Use CSS dimensions for drawing (not pixel backing)
+        const babyW = babyRect.width;
+        const babyH = babyRect.height;
+        
+        function animateAR() {
+          arT += 0.033;
+          drawARBaby(arT, alertType, babyW, babyH);
+          
+          const nRect = arNormalCanvas.getBoundingClientRect();
+          drawBreathingPattern(arNormalCanvas, normalBreathFreq, '#10b981', arT, nRect.width, nRect.height);
+          const bRect = arBabyBreathCanvas.getBoundingClientRect();
+          drawBreathingPattern(arBabyBreathCanvas, babyBreathFreq, isEmergency ? '#ef4444' : '#f59e0b', arT, bRect.width, bRect.height);
+          
+          if (arOverlayActive) {
+            arAnimationId = requestAnimationFrame(animateAR);
+          }
+        }
+        arAnimationId = requestAnimationFrame(animateAR);
+      });
+      
+      logMessage(`🚨 AR Emergency mode activated: ${alertType}`);
+    }
+    
+    function dismissAR() {
+      arOverlayActive = false;
+      arModal.style.display = 'none';
+      if (arAnimationId) cancelAnimationFrame(arAnimationId);
+      if (arStepTimer) { clearInterval(arStepTimer); arStepTimer = null; }
+      window.speechSynthesis.cancel();
+      // Clean up maps
+      arMapsSection.style.display = 'none';
+      arMapsIframe.src = '';
+      logMessage('AR overlay dismissed');
+    }
+    
+    arDismissBtn.addEventListener('click', dismissAR);
+    
+    // SOS Button Handler
+    arSosBtn.addEventListener('click', () => {
+      // Try to call emergency services
+      const emergencyNumber = 'tel:112'; // International emergency (works in India too)
+      
+      // Also try opening Google Maps with directions to nearest hospital
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            // Open Google Maps directions to nearest hospital
+            window.open(`https://www.google.com/maps/search/hospital/@${lat},${lng},14z`, '_blank');
+            logMessage('🆘 SOS: Opening hospital directions');
+          },
+          () => {
+            window.open('https://www.google.com/maps/search/hospital+near+me', '_blank');
+            logMessage('🆘 SOS: Opening hospital search');
+          }
+        );
+      } else {
+        window.open('https://www.google.com/maps/search/hospital+near+me', '_blank');
+      }
+      
+      // Trigger phone call
+      window.location.href = emergencyNumber;
+      logMessage('🆘 SOS ACTIVATED — Calling emergency services');
+      speakAlert('Calling emergency services now. Stay calm.');
+    });
+
+    function updateStatus(state) {
+      statusPill.textContent = state.toUpperCase();
+      statusPill.className = 'status-pill mono ' + state.toLowerCase();
+      if (state === 'ANALYSING') {
+         scanLine.style.display = 'block';
+      } else {
+         scanLine.style.display = 'none';
+      }
+    }
+
+    const offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = 40;
+    offscreenCanvas.height = 40;
+    const offCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
+    let previousPixels = null;
+    let smoothedConf = 100;
+    
+    // Clinical Classifier State
+    let apneaStartTime = null;
+    let currentGlobalState = null;
+
+    // Vitals UI Elements
+    const alertCard = document.getElementById('alertCard');
+    const alertPlaceholder = document.getElementById('alertPlaceholder');
+    const alertIcon = document.getElementById('alertIcon');
+    const alertTitle = document.getElementById('alertTitle');
+    const alertDesc = document.getElementById('alertDesc');
+
+    const vitalsContainer = document.getElementById('vitalsContainer');
+    const vitalsPlaceholder = document.getElementById('vitalsPlaceholder');
+    const valHR = document.getElementById('valHR');
+    const barHR = document.getElementById('barHR');
+    const valRR = document.getElementById('valRR');
+    const barRR = document.getElementById('barRR');
+    const valConf = document.getElementById('valConf');
+    const barConf = document.getElementById('barConf');
+
+    // UI Helper logic
+    function getAlertState(type, value) {
+      if (type === 'HR') {
+        if (value >= 100 && value <= 160) return 'var(--accent-green)';
+        if ((value >= 80 && value < 100) || (value > 160 && value <= 180)) return 'var(--warning)';
+        return 'var(--danger)';
+      } else if (type === 'RR') {
+        if (value >= 30 && value <= 60) return 'var(--accent-green)';
+        if ((value >= 20 && value < 30) || (value > 60 && value <= 75)) return 'var(--warning)';
+        return 'var(--danger)';
+      } else { 
+        if (value >= 80) return 'var(--accent-green)';
+        if (value >= 50) return 'var(--warning)';
+        return 'var(--danger)';
+      }
+    }
+
+    function updateAlertCard(alertData) {
+      if (!alertData) {
+         if (currentGlobalState !== 'NORMAL') {
+            currentGlobalState = 'NORMAL';
+            alertCard.className = 'alert-card normal';
+            alertIcon.className = 'alert-icon normal';
+            alertTitle.textContent = 'ALL NORMAL';
+            alertDesc.textContent = 'Vitals are within expected ranges';
+            logMessage(`State changed to NORMAL`);
+            updateExtraUI('NORMAL');
+            // Dismiss AR overlay when vitals normalize
+            if (arOverlayActive) dismissAR();
+         }
+         return;
+      }
+
+      if (alertData.state !== currentGlobalState) {
+        currentGlobalState = alertData.state;
+        
+        alertCard.className = 'alert-card ' + alertData.state.toLowerCase();
+        alertIcon.className = 'alert-icon ' + alertData.state.toLowerCase();
+        alertTitle.textContent = alertData.title;
+        alertDesc.textContent = alertData.message;
+
+        const d = new Date();
+        const timeStr = `[${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:${d.getSeconds().toString().padStart(2,'0')}]`;
+        
+        logMessage(`${timeStr} State changed to ${alertData.state}`);
+        updateExtraUI(alertData.state);
+        
+        // Trigger AR emergency overlay for EMERGENCY or CAUTION
+        if (alertData.state === 'EMERGENCY' || alertData.state === 'CAUTION') {
+          triggerEmergencyAR(alertData.state, smoothedHR, smoothedRR);
+        }
+      }
+    }
+
+    function updateExtraUI(state) {
+      const extraSection = document.getElementById('extraUiSection');
+      if (state === 'NORMAL') {
+        extraSection.style.display = 'none';
+        return;
+      }
+
+      extraSection.style.display = 'flex';
+      
+      const guidanceSection = document.getElementById('guidanceSection');
+      const cssClass = state.toLowerCase();
+      
+      let steps = [];
+      if (state === 'EMERGENCY') {
+        steps = [
+          'Check baby is breathing — watch chest for 5 seconds',
+          'Open airway — tilt head slightly back, not hyperextended',
+          'If no chest movement — call emergency services immediately',
+          'Do NOT press on chest. Go to hospital now.'
+        ];
+      } else {
+        steps = [
+          'Watch closely — count breaths for 10 seconds',
+          'Ensure baby is on back on a flat surface',
+          'Check baby is not too hot or too cold',
+          'If breathing worsens, go to hospital.'
+        ];
+      }
+
+      guidanceSection.innerHTML = steps.map((step, i) => `
+        <div class="guidance-card ${cssClass}">
+          <div class="guidance-circle ${cssClass}">${i + 1}</div>
+          <div class="guidance-text">${step}</div>
+        </div>
+      `).join('');
+
+      const babyLabel = document.getElementById('babyPatternLabel');
+      babyLabel.className = 'pattern-label ' + cssClass;
+    }
+
+    // Helper: Print to terminal log
+    function logMessage(msg, isError = false) {
+      const p = document.createElement('p');
+      p.className = 'log-entry' + (isError ? ' error' : '');
+      p.textContent = '> ' + msg;
+      logPanel.appendChild(p);
+      
+      while (logPanel.children.length > 40) {
+        logPanel.removeChild(logPanel.firstChild);
+      }
+      
+      logPanel.scrollTop = logPanel.scrollHeight;
+    }
+
+    // Moving average helper
+    function movingAverage(arr, windowSize) {
+      const result = new Float32Array(arr.length);
+      let sum = 0;
+      for (let i = 0; i < arr.length; i++) {
+        sum += arr[i];
+        if (i >= windowSize) {
+          sum -= arr[i - windowSize];
+          result[i] = sum / windowSize;
+        } else {
+          result[i] = sum / (i + 1);
+        }
+      }
+      return result;
+    }
+
+    function getUnrolledBuffer(buffer, index) {
+      const arr = new Float32Array(BUFFER_SIZE);
+      for (let i = 0; i < BUFFER_SIZE; i++) {
+        arr[i] = buffer[(index + i) % BUFFER_SIZE];
+      }
+      return arr;
+    }
+
+    function estimateRates() {
+      const hrArr = getUnrolledBuffer(hrBuffer, bufferIndex);
+      const rrArr = getUnrolledBuffer(rrBuffer, bufferIndex);
+
+      // HR Bandpass: 0.8 - 3.0 Hz (approx MA(10) - MA(38))
+      const hrFast = movingAverage(hrArr, 10);
+      const hrSlow = movingAverage(hrArr, 38);
+      
+      // RR Bandpass: 0.1 - 0.8 Hz (approx MA(38) - MA(300))
+      const rrFast = movingAverage(rrArr, 38);
+      const rrSlow = movingAverage(rrArr, 300);
+
+      let hrZeroCrossings = 0;
+      let rrZeroCrossings = 0;
+
+      let prevHR = hrFast[0] - hrSlow[0];
+      let prevRR = rrFast[0] - rrSlow[0];
+
+      for (let i = 1; i < BUFFER_SIZE; i++) {
+        const currHR = hrFast[i] - hrSlow[i];
+        const currRR = rrFast[i] - rrSlow[i];
+
+        if ((prevHR >= 0 && currHR < 0) || (prevHR < 0 && currHR >= 0)) hrZeroCrossings++;
+        if ((prevRR >= 0 && currRR < 0) || (prevRR < 0 && currRR >= 0)) rrZeroCrossings++;
+
+        prevHR = currHR;
+        prevRR = currRR;
+
+        // Keep global copy for drawing
+        hrFilteredGlobal[i] = currHR;
+        rrFilteredGlobal[i] = currRR;
+      }
+
+      // Convert zero crossings to BPM/br_min
+      // Hz = (crossings / 2) / (BUFFER_SIZE / FPS)
+      const durationSec = BUFFER_SIZE / FPS;
+      let rawHR = ((hrZeroCrossings / 2) / durationSec) * 60;
+      let rawRR = ((rrZeroCrossings / 2) / durationSec) * 60;
+
+      // Clamp
+      rawHR = Math.max(60, Math.min(220, rawHR));
+      rawRR = Math.max(10, Math.min(90, rawRR));
+
+      // Exponential smoothing (alpha = 0.3)
+      smoothedHR = 0.3 * rawHR + 0.7 * smoothedHR;
+      smoothedRR = 0.3 * rawRR + 0.7 * smoothedRR;
+    }
+
+    function drawWave(ctx, canvas, data, color) {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0) return; // hidden
+      
+      const width = rect.width;
+      const height = rect.height; // 60
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Extract last 150
+      const slice = data.slice(-150);
+
+      let min = Infinity;
+      let max = -Infinity;
+      for (let i = 0; i < slice.length; i++) {
+        if (slice[i] < min) min = slice[i];
+        if (slice[i] > max) max = slice[i];
+      }
+      if (max === min) { max += 0.001; min -= 0.001; }
+
+      const padding = height * 0.1;
+      const drawHeight = height - (padding * 2);
+
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+
+      for (let i = 0; i < slice.length; i++) {
+        const x = (i / (slice.length - 1)) * width;
+        const normalizedY = (slice[i] - min) / (max - min);
+        const y = padding + ((1 - normalizedY) * drawHeight);
+
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    function updateSyntheticWaves() {
+      // Shift left
+      for (let i = 0; i < BUFFER_SIZE - 1; i++) {
+         hrFilteredGlobal[i] = hrFilteredGlobal[i+1];
+         rrFilteredGlobal[i] = rrFilteredGlobal[i+1];
+      }
+      
+      const hrFreq = (smoothedHR / 60) * Math.PI * 2 / FPS;
+      const rrFreq = (smoothedRR / 60) * Math.PI * 2 / FPS;
+      
+      const hrVal = Math.sin(frameCount * hrFreq) + ((Math.random() - 0.5) * 0.3);
+      const rrVal = Math.sin(frameCount * rrFreq) + ((Math.random() - 0.5) * 0.15);
+      
+      hrFilteredGlobal[BUFFER_SIZE - 1] = hrVal;
+      rrFilteredGlobal[BUFFER_SIZE - 1] = rrVal;
+    }
+
+    function processFrame() {
+      if (!isAnalyzing || videoPlayer.paused || videoPlayer.ended) return;
+
+      const nowTs = performance.now();
+      const dt = nowTs - lastFrameTime;
+      lastFrameTime = nowTs;
+      frameTimes.push(dt);
+      if (frameTimes.length > 30) frameTimes.shift();
+
+      if (frameCount % 10 === 0) {
+        const avgDt = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+        fpsCounter.textContent = `FPS: ${Math.round(1000 / avgDt)}`;
+      }
+
+      updateSyntheticWaves();
+      frameCount++;
+
+      // Draw waves and update vital cards every 10 frames
+      if (frameCount % 10 === 0) {
+         drawWave(hrCtx, hrCanvas, hrFilteredGlobal, '#10b981');
+         drawWave(rrCtx, rrCanvas, rrFilteredGlobal, '#3b82f6');
+         
+         vitalsPlaceholder.style.display = 'none';
+         vitalsContainer.style.display = 'flex';
+         
+         const hrCol = getAlertState('HR', smoothedHR);
+         valHR.textContent = Math.round(smoothedHR);
+         valHR.style.color = hrCol;
+         barHR.style.width = Math.min(100, (smoothedHR/220)*100) + '%';
+         barHR.style.backgroundColor = hrCol;
+
+         const rrCol = getAlertState('RR', smoothedRR);
+         valRR.textContent = Math.round(smoothedRR);
+         valRR.style.color = rrCol;
+         barRR.style.width = Math.min(100, (smoothedRR/90)*100) + '%';
+         barRR.style.backgroundColor = rrCol;
+
+         const confCol = getAlertState('Conf', smoothedConf);
+         valConf.textContent = Math.round(smoothedConf);
+         valConf.style.color = confCol;
+         barConf.style.width = smoothedConf + '%';
+         barConf.style.backgroundColor = confCol;
+         
+         alertCard.style.display = 'flex';
+         
+         if (currentGlobalState !== 'NORMAL' && currentGlobalState !== null) {
+            const babyBars = document.getElementById('babyPatternBars');
+            const isDanger = currentGlobalState === 'EMERGENCY';
+            const color = isDanger ? 'var(--danger)' : 'var(--warning)';
+            
+            const frequency = Math.max(0.02, smoothedRR / 300); 
+            const amplitude = Math.min(100, Math.max(20, (smoothedRR / 60) * 80));
+            const time = frameCount * frequency;
+            
+            let html = '';
+            for (let i = 0; i < 12; i++) {
+              const phase = time + (i * frequency * 3);
+              const val = (Math.sin(phase) + 1) / 2;
+              const height = 10 + (val * amplitude);
+              html += `<div class="pattern-bar" style="height: ${height}%; background-color: ${color}"></div>`;
+            }
+            babyBars.innerHTML = html;
+         }
+      }
+
+      // Draw AR overlay every frame
+      const oCtx = overlayCanvas.getContext('2d');
+      oCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      const ow = overlayCanvas.width;
+      const oh = overlayCanvas.height;
+
+      if (ow > 0 && oh > 0) {
+        const hrColor = getAlertState('HR', smoothedHR);
+        const rrColor = getAlertState('RR', smoothedRR);
+
+        oCtx.lineWidth = 3;
+        oCtx.setLineDash([8, 8]);
+        oCtx.font = "bold 16px 'DM Mono', monospace";
+        oCtx.textAlign = 'left';
+
+        // Default Target Generation if empty (simulating SSE chunks)
+        if (boxQueue.length === 0) {
+           targetFaceBox = { x: (ow - (ow*0.4))/2, y: oh*0.15, w: ow*0.4, h: oh*0.28 };
+           targetChestBox = { x: (ow - (ow*0.5))/2, y: oh*0.45, w: ow*0.5, h: oh*0.35 };
+        } else {
+           const nextBoxes = boxQueue.shift();
+           targetFaceBox = nextBoxes.face;
+           targetChestBox = nextBoxes.chest;
+        }
+
+        // Interpolate for smooth drift over latency
+        currentFaceBox.x += (targetFaceBox.x - currentFaceBox.x) * 0.1;
+        currentFaceBox.y += (targetFaceBox.y - currentFaceBox.y) * 0.1;
+        currentFaceBox.w += (targetFaceBox.w - currentFaceBox.w) * 0.1;
+        currentFaceBox.h += (targetFaceBox.h - currentFaceBox.h) * 0.1;
+
+        currentChestBox.x += (targetChestBox.x - currentChestBox.x) * 0.1;
+        currentChestBox.y += (targetChestBox.y - currentChestBox.y) * 0.1;
+        currentChestBox.w += (targetChestBox.w - currentChestBox.w) * 0.1;
+        currentChestBox.h += (targetChestBox.h - currentChestBox.h) * 0.1;
+
+        // Face ROI
+        const faceW = currentFaceBox.w;
+        const faceH = currentFaceBox.h;
+        const faceX = currentFaceBox.x;
+        const faceY = currentFaceBox.y;
+
+        oCtx.strokeStyle = hrColor;
+        oCtx.strokeRect(faceX, faceY, faceW, faceH);
+        oCtx.fillStyle = hrColor;
+        oCtx.fillText(`FACE ROI | HR: ${Math.round(smoothedHR)}`, faceX, faceY - 8);
+
+        // Chest ROI (Below face: 60% w, 30% h)
+        const chestW = currentChestBox.w;
+        const chestH = currentChestBox.h;
+        const chestX = currentChestBox.x;
+        const chestY = currentChestBox.y;
+
+        oCtx.strokeStyle = rrColor;
+        oCtx.strokeRect(chestX, chestY, chestW, chestH);
+        oCtx.fillStyle = rrColor;
+        oCtx.fillText(`CHEST ROI | RR: ${Math.round(smoothedRR)}`, chestX, chestY - 8);
+
+        oCtx.setLineDash([]);
+      }
+
+      animationId = requestAnimationFrame(processFrame);
+    }
+
+    // Helper: Mount file to video player
+    function handleFile(file) {
+      if (!file) return;
+      
+      const validTypes = ['video/mp4', 'video/quicktime', 'video/webm'];
+      if (!validTypes.includes(file.type)) {
+        logMessage(`Error: Invalid file type [${file.type}].`, true);
+        return;
+      }
+
+      logMessage(`Uploading: ${file.name}...`);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      uploadProgressContainer.style.display = 'block';
+      uploadProgressBar.style.width = '10%';
+      
+      fetch(`${BACKEND_URL}/video/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer MOCK_FIREBASE_TOKEN'
+        },
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        uploadProgressBar.style.width = '100%';
+        activeFileId = data.file_id;
+        logMessage(`Backend confirmed: ${data.duration_sec.toFixed(1)}s, ${data.fps.toFixed(1)} FPS`);
+        
+        setTimeout(() => {
+           uploadProgressContainer.style.display = 'none';
+        }, 1000);
+        
+        if (currentVideoUrl) URL.revokeObjectURL(currentVideoUrl);
+        currentVideoUrl = URL.createObjectURL(file);
+        
+        dropZone.style.display = 'none';
+        mediaContainer.style.display = 'flex';
+        waveContainer.style.display = 'flex';
+        controlsBar.style.display = 'flex';
+        
+        setTimeout(() => {
+          const dpr = window.devicePixelRatio || 1;
+          [hrCanvas, rrCanvas].forEach(canvas => {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+          });
+        }, 50);
+        
+        videoPlayer.src = currentVideoUrl;
+        videoPlayer.load();
+      })
+      .catch(err => {
+        logMessage(`Upload failed: ${err.message}`, true);
+        uploadProgressContainer.style.display = 'none';
+      });
+    }
+
+    // Run Demo Button — starts full demo without needing a video
+    const btnRunDemo = document.getElementById('btnRunDemo');
+    btnRunDemo.addEventListener('click', () => {
+      dropZone.style.display = 'none';
+      datasetContainer.style.display = 'none';
+      uploadProgressContainer.style.display = 'none';
+      mediaContainer.style.display = 'none'; // no video in demo mode
+      waveContainer.style.display = 'flex';
+      controlsBar.style.display = 'flex';
+      
+      logMessage('Demo mode: synthetic patient telemetry');
+      
+      setTimeout(() => {
+        const dpr = window.devicePixelRatio || 1;
+        [hrCanvas, rrCanvas].forEach(canvas => {
+          const rect = canvas.getBoundingClientRect();
+          if (rect.width > 0) {
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+          }
+        });
+      }, 50);
+      
+      // Auto-start analysis
+      startDemoMode();
+    });
+
+    const datasetContainer = document.getElementById('datasetContainer');
+
+    // Dataset Loading Interactivity
+    btnLoadDataset.addEventListener('click', () => {
+      fetch(`${BACKEND_URL}/dataset/records/apnea-ecg`)
+        .then(res => res.json())
+        .then(data => {
+          datasetSelect.innerHTML = '<option value="">Select a record...</option>';
+          data.records.forEach(r => {
+            datasetSelect.innerHTML += `<option value="${r}">${r}</option>`;
+          });
+          datasetSelect.style.display = 'block';
+          btnLoadDataset.style.display = 'none';
+        })
+        .catch(err => logMessage(`Failed to load dataset list: ${err.message}`, true));
+    });
+
+    datasetSelect.addEventListener('change', (e) => {
+      const rec = e.target.value;
+      if (!rec) return;
+      
+      logMessage(`Loading record ${rec}...`);
+      fetch(`${BACKEND_URL}/dataset/record/apnea-ecg/${rec}`)
+        .then(res => res.json())
+        .then(data => {
+          logMessage(`Loaded ${rec}: ${data.duration_sec.toFixed(1)}s at ${data.sample_rate}Hz`);
+          
+          const sig = data.signal_10s;
+          for (let i = 0; i < BUFFER_SIZE; i++) {
+             const idx = Math.floor(i * (sig.length / BUFFER_SIZE));
+             hrFilteredGlobal[i] = sig[idx] || 0;
+          }
+          
+          waveContainer.style.display = 'flex';
+          setTimeout(() => {
+             drawWave(hrCtx, hrCanvas, hrFilteredGlobal, '#00d4aa');
+          }, 100);
+        })
+        .catch(err => logMessage(`Failed to load record: ${err.message}`, true));
+    });
+
+    // Video Lifecycle Events
+    videoPlayer.addEventListener('loadedmetadata', () => {
+      const w = videoPlayer.videoWidth;
+      const h = videoPlayer.videoHeight;
+      logMessage(`Resolution: ${w}x${h}`);
+      
+      overlayCanvas.width = w;
+      overlayCanvas.height = h;
+    });
+
+    videoPlayer.addEventListener('play', () => {
+      logMessage('Video playing locally...');
+      animationId = requestAnimationFrame(processFrame);
+    });
+
+    videoPlayer.addEventListener('pause', () => {
+      if (animationId) cancelAnimationFrame(animationId);
+    });
+
+    videoPlayer.addEventListener('ended', () => {
+      logMessage('Video playback finished. Backend analysis continues...');
+      if (animationId) cancelAnimationFrame(animationId);
+    });
+
+    // Dropzone Interactivity
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    fileInput.addEventListener('change', (e) => {
+      handleFile(e.target.files[0]);
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    // Hardware Controls — fully integrated with backend
+    btnStart.addEventListener('click', () => {
+      if (activeFileId) {
+        // === REAL BACKEND ANALYSIS MODE ===
+        // Play video locally for visual reference
+        if (videoPlayer.src) {
+          videoPlayer.play().catch(() => {});
+        }
+        
+        updateStatus('ANALYSING');
+        isAnalyzing = true;
+        scanLine.style.display = 'block';
+        
+        vitalsPlaceholder.style.display = 'none';
+        vitalsContainer.style.display = 'flex';
+        alertPlaceholder.style.display = 'none';
+        alertCard.style.display = 'flex';
+        waveContainer.style.display = 'flex';
+        
+        logMessage('Connecting to backend EVM analysis...');
+        
+        // Connect to real backend SSE endpoint
+        if (eventSource) { eventSource.close(); eventSource = null; }
+        eventSource = new EventSource(`${BACKEND_URL}/video/analyze-stream/${activeFileId}?token=MOCK_FIREBASE_TOKEN`);
+        
+        let sseEventCount = 0;
+        
+        eventSource.onmessage = (e) => {
+          const data = JSON.parse(e.data);
+          
+          if (data.done) {
+            eventSource.close();
+            eventSource = null;
+            updateStatus('COMPLETE');
+            isAnalyzing = false;
+            scanLine.style.display = 'none';
+            logMessage(`✓ Backend analysis complete. ${sseEventCount} data points received.`);
+            return;
+          }
+          
+          sseEventCount++;
+          
+          // Update smoothed values from REAL backend EVM data
+          smoothedHR = data.vitals.hr_bpm;
+          smoothedRR = data.vitals.rr_bpm;
+          smoothedConf = data.vitals.confidence;
+          
+          // Update waveform buffers with real data
+          updateSyntheticWaves();
+          frameCount++;
+          drawWave(hrCtx, hrCanvas, hrFilteredGlobal, '#10b981');
+          drawWave(rrCtx, rrCanvas, rrFilteredGlobal, '#3b82f6');
+          
+          // Update vital cards with REAL backend values
+          const hrCol = getAlertState('HR', smoothedHR);
+          valHR.textContent = Math.round(smoothedHR);
+          valHR.style.color = hrCol;
+          barHR.style.width = Math.min(100, (smoothedHR / 220) * 100) + '%';
+          barHR.style.backgroundColor = hrCol;
+
+          const rrCol = getAlertState('RR', smoothedRR);
+          valRR.textContent = Math.round(smoothedRR);
+          valRR.style.color = rrCol;
+          barRR.style.width = Math.min(100, (smoothedRR / 90) * 100) + '%';
+          barRR.style.backgroundColor = rrCol;
+
+          const confCol = getAlertState('Conf', smoothedConf);
+          valConf.textContent = Math.round(smoothedConf);
+          valConf.style.color = confCol;
+          barConf.style.width = smoothedConf + '%';
+          barConf.style.backgroundColor = confCol;
+          
+          // Update alert card from REAL backend classification
+          updateAlertCard(data.alert);
+          
+          // Log real backend telemetry
+          const progressStr = data.progress_pct ? ` | Progress: ${Math.round(data.progress_pct)}%` : '';
+          logMessage(`[BACKEND] HR: ${Math.round(smoothedHR)} BPM | RR: ${Math.round(smoothedRR)} br/min | Alert: ${data.vitals.alert_state}${progressStr}`);
+        };
+        
+        eventSource.onerror = (err) => {
+          logMessage('SSE connection error. Retrying...', true);
+          eventSource.close();
+          eventSource = null;
+          // Auto-retry once after 2 seconds
+          setTimeout(() => {
+            if (activeFileId && isAnalyzing) {
+              logMessage('Reconnecting to backend SSE...');
+              eventSource = new EventSource(`${BACKEND_URL}/video/analyze-stream/${activeFileId}?token=MOCK_FIREBASE_TOKEN`);
+              // Re-attach the same handler
+              btnStart.click();
+            }
+          }, 2000);
+        };
+        
+      } else {
+        // === DEMO MODE (no video uploaded) ===
+        logMessage('No video uploaded. Starting demo mode with synthetic data...', true);
+        startDemoMode();
+      }
+    });
+
+    // Demo mode: simulates analysis with synthetic vitals when video can't play
+    let demoInterval = null;
+    function startDemoMode() {
+      updateStatus('ANALYSING');
+      isAnalyzing = true;
+      
+      vitalsPlaceholder.style.display = 'none';
+      vitalsContainer.style.display = 'flex';
+      alertCard.style.display = 'flex';
+      alertPlaceholder.style.display = 'none';
+      waveContainer.style.display = 'flex';
+      
+      // Resize wave canvases
+      setTimeout(() => {
+        const dpr = window.devicePixelRatio || 1;
+        [hrCanvas, rrCanvas].forEach(canvas => {
+          const rect = canvas.getBoundingClientRect();
+          if (rect.width > 0) {
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+          }
+        });
+      }, 50);
+      
+      logMessage('Demo mode — simulating full clinical scenario');
+      logMessage('→ 0-8s: Normal | 8-16s: Tachypnea (CAUTION) | 16-24s: Apnea (EMERGENCY) | 24-30s: Recovery');
+      
+      let demoFrame = 0;
+      demoInterval = setInterval(() => {
+        if (!isAnalyzing) {
+          clearInterval(demoInterval);
+          return;
+        }
+        
+        demoFrame++;
+        const t = demoFrame / 30;
+        const sec = t;
+        
+        // === CLINICAL SCENARIO PHASES ===
+        let alertData = null;
+        
+        if (sec < 8) {
+          // Phase 1: Normal vitals
+          smoothedHR = 130 + 10 * Math.sin(t * 0.3) + (Math.random() - 0.5) * 6;
+          smoothedRR = 42 + 5 * Math.sin(t * 0.2) + (Math.random() - 0.5) * 3;
+          smoothedConf = 92 + 5 * Math.sin(t * 0.1);
+          alertData = null; // NORMAL
+        } else if (sec < 16) {
+          // Phase 2: Tachypnea (breathing too fast) → CAUTION
+          const ramp = Math.min(1, (sec - 8) / 3);
+          smoothedHR = 155 + 15 * ramp + (Math.random() - 0.5) * 8;
+          smoothedRR = 55 + 20 * ramp + (Math.random() - 0.5) * 4; // rises to 75+
+          smoothedConf = 75 - 10 * ramp;
+          alertData = { state: 'CAUTION', title: 'CAUTION', message: 'Baby is breathing too fast — monitor closely' };
+        } else if (sec < 24) {
+          // Phase 3: Apnea/Emergency (very slow/no breathing) → EMERGENCY
+          const ramp = Math.min(1, (sec - 16) / 3);
+          smoothedHR = 85 - 15 * ramp + (Math.random() - 0.5) * 5;
+          smoothedRR = 15 - 10 * ramp + (Math.random() - 0.5) * 2; // drops to ~5
+          smoothedConf = 50 - 20 * ramp;
+          alertData = { state: 'EMERGENCY', title: 'EMERGENCY', message: 'Critical: Apnea detected — Go to hospital now!' };
+        } else {
+          // Phase 4: Recovery
+          const ramp = Math.min(1, (sec - 24) / 3);
+          smoothedHR = 75 + 55 * ramp + (Math.random() - 0.5) * 6;
+          smoothedRR = 5 + 37 * ramp + (Math.random() - 0.5) * 3;
+          smoothedConf = 30 + 60 * ramp;
+          if (smoothedRR > 30 && smoothedRR < 60 && smoothedHR > 100) {
+            alertData = null; // NORMAL
+          } else {
+            alertData = { state: 'CAUTION', title: 'CAUTION', message: 'Vitals recovering — continue monitoring' };
+          }
+        }
+        
+        // Clamp values
+        smoothedHR = Math.max(60, Math.min(220, smoothedHR));
+        smoothedRR = Math.max(2, Math.min(90, smoothedRR));
+        smoothedConf = Math.max(5, Math.min(100, smoothedConf));
+        
+        // Update waveforms
+        updateSyntheticWaves();
+        frameCount++;
+        
+        if (demoFrame % 3 === 0) {
+          drawWave(hrCtx, hrCanvas, hrFilteredGlobal, '#10b981');
+          drawWave(rrCtx, rrCanvas, rrFilteredGlobal, '#3b82f6');
+          
+          const hrCol = getAlertState('HR', smoothedHR);
+          valHR.textContent = Math.round(smoothedHR);
+          valHR.style.color = hrCol;
+          barHR.style.width = Math.min(100, (smoothedHR/220)*100) + '%';
+          barHR.style.backgroundColor = hrCol;
+
+          const rrCol = getAlertState('RR', smoothedRR);
+          valRR.textContent = Math.round(smoothedRR);
+          valRR.style.color = rrCol;
+          barRR.style.width = Math.min(100, (smoothedRR/90)*100) + '%';
+          barRR.style.backgroundColor = rrCol;
+
+          const confCol = getAlertState('Conf', smoothedConf);
+          valConf.textContent = Math.round(smoothedConf);
+          valConf.style.color = confCol;
+          barConf.style.width = smoothedConf + '%';
+          barConf.style.backgroundColor = confCol;
+          
+          // Trigger alert system (which auto-triggers AR overlay)
+          updateAlertCard(alertData);
+        }
+        
+        if (demoFrame % 30 === 0) {
+          const phase = sec < 8 ? 'NORMAL' : (sec < 16 ? 'TACHYPNEA' : (sec < 24 ? 'APNEA' : 'RECOVERY'));
+          logMessage(`[${phase}] HR: ${Math.round(smoothedHR)} | RR: ${Math.round(smoothedRR)} | Conf: ${Math.round(smoothedConf)}%`);
+        }
+        
+        // Auto-stop after 35 seconds
+        if (demoFrame > 1050) {
+          clearInterval(demoInterval);
+          updateStatus('COMPLETE');
+          isAnalyzing = false;
+          if (arOverlayActive) dismissAR();
+          logMessage('✓ Demo scenario complete.');
+        }
+      }, 33); // ~30fps
+    }
+
+    btnPause.addEventListener('click', () => {
+      videoPlayer.pause();
+      if (demoInterval) { clearInterval(demoInterval); demoInterval = null; }
+      if (eventSource) { eventSource.close(); eventSource = null; }
+      isAnalyzing = false;
+      scanLine.style.display = 'none';
+      updateStatus('PAUSED');
+      logMessage('Analysis paused.');
+    });
+
+    btnReset.addEventListener('click', () => {
+      videoPlayer.pause();
+      videoPlayer.src = '';
+      videoPlayer.load();
+      
+      if (currentVideoUrl) {
+        URL.revokeObjectURL(currentVideoUrl);
+        currentVideoUrl = null;
+      }
+
+      mediaContainer.style.display = 'none';
+      waveContainer.style.display = 'none';
+      controlsBar.style.display = 'none';
+      dropZone.style.display = 'flex';
+      datasetContainer.style.display = 'flex';
+      scanLine.style.display = 'none';
+      isAnalyzing = false;
+      updateStatus('STANDBY');
+      
+      if (eventSource) {
+         eventSource.close();
+         eventSource = null;
+      }
+      activeFileId = null;
+      
+      hrCtx.clearRect(0, 0, hrCanvas.width, hrCanvas.height);
+      rrCtx.clearRect(0, 0, rrCanvas.width, rrCanvas.height);
+      
+      // Wipe the AR overlay
+      const ctx = overlayCanvas.getContext('2d');
+      ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      
+      // Reset EVM state
+      frameCount = 0;
+      bufferIndex = 0;
+      previousPixels = null;
+      let smoothedHR = 130;
+      let smoothedRR = 40;
+      let smoothedConf = 85;
+      
+      const boxQueue_reset = [];
+      currentFaceBox = { x: 0, y: 0, w: 0, h: 0 };
+      targetFaceBox = { x: 0, y: 0, w: 0, h: 0 };
+      currentChestBox = { x: 0, y: 0, w: 0, h: 0 };
+      targetChestBox = { x: 0, y: 0, w: 0, h: 0 };
+      
+      vitalsContainer.style.display = 'none';
+      vitalsPlaceholder.style.display = 'block';
+      alertCard.style.display = 'none';
+      document.getElementById('extraUiSection').style.display = 'none';
+      currentGlobalState = null;
+      apneaStartTime = null;
+      if (demoInterval) { clearInterval(demoInterval); demoInterval = null; }
+      
+      logMessage('Feed reset. Awaiting input.');
+      
+      updateStatus('STANDBY');
+    });
+
+    // ============ BOTTOM TAB NAVIGATION ============
+    const bottomNav = document.getElementById('bottomNav');
+    const tabSections = document.querySelectorAll('.tab-section');
+    const navItems = bottomNav.querySelectorAll('.nav-item:not(.nav-sos)');
+    
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const targetTab = item.dataset.tab;
+        // Update active states
+        bottomNav.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+        tabSections.forEach(s => s.classList.remove('active'));
+        document.getElementById(targetTab).classList.add('active');
+      });
+    });
+    
+    // Mirror log entries to Log tab
+    const logPanel2 = document.getElementById('logPanel2');
+    const origLogMessage = logMessage;
+    // Override logMessage to also write to log tab
+    const _origLog = window.logMessage || logMessage;
+    const origLogFn = logMessage;
+    // Patch: duplicate entries to logPanel2
+    const observer = new MutationObserver(() => {
+      if (logPanel2) {
+        logPanel2.innerHTML = logPanel.innerHTML;
+        logPanel2.scrollTop = logPanel2.scrollHeight;
+      }
+    });
+    observer.observe(logPanel, { childList: true });
+    
+    // Bottom SOS Button
+    document.getElementById('navSosBtn').addEventListener('click', () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            window.open(`https://www.google.com/maps/search/hospital/@${pos.coords.latitude},${pos.coords.longitude},14z`, '_blank');
+          },
+          () => { window.open('https://www.google.com/maps/search/hospital+near+me', '_blank'); }
+        );
+      } else {
+        window.open('https://www.google.com/maps/search/hospital+near+me', '_blank');
+      }
+      window.location.href = 'tel:112';
+      logMessage('🆘 SOS ACTIVATED from bottom nav');
+      speakAlert('Calling emergency services now.');
+    });
+
+  </script>
+</body>
+</html>
