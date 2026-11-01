@@ -34,28 +34,26 @@ def extract_motion_signal(frames: list[np.ndarray]) -> np.ndarray:
     if not frames:
         return np.array([])
         
-    H, W, _ = frames[0].shape
-    
-    # Chest ROI: centre 60% width, 35-65% height
-    x1 = int(W * 0.2)
-    x2 = int(W * 0.8)
-    y1 = int(H * 0.35)
-    y2 = int(H * 0.65)
-    
-    signal = [0.0]
+    signal = []
     prev_roi = None
-    
+
     for frame in frames:
+        # Recompute the ROI when frame dimensions change.
+        height, width, _ = frame.shape
+        x1, x2 = int(width * 0.2), int(width * 0.8)
+        y1, y2 = int(height * 0.35), int(height * 0.65)
         roi = frame[y1:y2, x1:x2].astype(np.float32)
         if roi.size == 0:
+            signal.append(0.0)
+            prev_roi = None
             continue
-            
-        if prev_roi is not None:
-            diff = np.mean(np.abs(roi - prev_roi))
-            signal.append(diff)
-            
+
+        if prev_roi is not None and roi.shape == prev_roi.shape:
+            signal.append(np.mean(np.abs(roi - prev_roi)))
+        else:
+            signal.append(0.0)
         prev_roi = roi
-        
+
     return np.array(signal)
 
 def bandpass_filter(signal: np.ndarray, fs: float, low_hz: float, high_hz: float) -> np.ndarray:
