@@ -40,3 +40,13 @@ Use de-identified or synthetic examples. Do not commit infant videos or patient 
 ## Review checklist
 
 Check API-offline behavior, invalid video uploads, empty/noisy signals, permissions, and clear distinction between demonstrations and measured signals. Any prospective clinical application needs separate validation, qualified review and an appropriate deployment process.
+
+### Motion extraction regression checks
+
+Install `requirements-signal-test.txt`, then run
+`python -m pytest tests/test_motion_signal.py -q` with Python 3.14.
+The lightweight suite checks frame-to-sample alignment, empty regions, resolution
+changes, and ordinary motion differences without models or patient data. Missing
+regions and changed ROI shapes start a new baseline with a zero sample; this preserves
+timing but is not a clinical confidence or validity guarantee. GitHub Actions runs
+the same checks on pull requests and pushes to `master`.
